@@ -1,8 +1,6 @@
 import json
 import praw
-import pandas as pd
 
-subr = 'pythonsandlot'
 credentials = 'client_secrets.json'
 
 with open(credentials) as f:
