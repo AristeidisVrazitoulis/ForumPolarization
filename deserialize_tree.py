@@ -8,12 +8,15 @@ from treelib import Tree
 
 class DeserializeTree:
     
-
     def __init__(self):
         self.tree = Tree()
         # id of the node
         self.id = 0
         self.users = set()
+
+    # TEMPORARY
+    def initialize_tree(self):
+        self.tree = Tree()
 
     # returns json file
     def load_file(self,filename):
@@ -55,7 +58,7 @@ class DeserializeTree:
 if __name__ == "__main__":
     from  post_id import *
     deserialize = DeserializeTree()
-    tree_json = deserialize.load_file(get_file(POST2))
+    tree_json = deserialize.load_file(get_file_name(POST2))
     tree = deserialize.load_tree(tree_json)
     tree.show()
 
