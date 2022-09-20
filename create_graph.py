@@ -2,8 +2,6 @@ from deserialize_tree import DeserializeTree
 from  post_id import *
 
 
-
-
 if __name__ == "__main__":
     filename = get_file(POST2)
     tree_obj = DeserializeTree()
