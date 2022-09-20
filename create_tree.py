@@ -1,7 +1,6 @@
 '''
 This file takes as an input a post id from reddit and saves the tree as json to disk
 '''
-
 import json
 import praw
 from treelib import Tree
@@ -18,11 +17,10 @@ def write_json_to_file(filename, tree):
 def create_tree(reddit, submission_id):
     submission = reddit.submission(submission_id)
     submission.comments.replace_more(limit=None)
-    
     tree = Tree()
     # root node
     tree.create_node(str(submission.author), str(submission.id)) 
-
+    #traverse the tree
     for comment in submission.comments.list():
         tree.create_node(
             str(comment.author),
@@ -30,7 +28,6 @@ def create_tree(reddit, submission_id):
             parent=str(comment.parent_id[3:]),
             data = {"body":comment.body, "score":comment.score}
         )
-    
     return tree
 
 
@@ -47,10 +44,13 @@ def get_reddit_instance(credentials):
                         refresh_token=creds['refresh_token'])
     return reddit
 
-#settings
-credentials = 'client_secrets.json'
-submission_id = "xdn27t"
 
-reddit = get_reddit_instance(credentials)
-tree = create_tree(reddit, submission_id)
-write_json_to_file("tree_{}.json".format(submission_id), tree)
+
+if __name__=="__main__":
+    #settings
+    credentials = 'client_secrets.json'
+    submission_id = "xdb9dj"
+
+    reddit = get_reddit_instance(credentials)
+    tree = create_tree(reddit, submission_id)
+    write_json_to_file("tree_{}.json".format(submission_id), tree)
