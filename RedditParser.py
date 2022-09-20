@@ -20,7 +20,7 @@ def create_tree(reddit, submission_id):
     tree = Tree()
     # root node
     tree.create_node(str(submission.author), str(submission.id)) 
-    #traverse the tree
+    # traverse the tree
     for comment in submission.comments.list():
         tree.create_node(
             str(comment.author),

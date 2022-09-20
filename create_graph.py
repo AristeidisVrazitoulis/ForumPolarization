@@ -1,11 +1,15 @@
-from deserialize_tree import load_file, load_tree
+from deserialize_tree import DeserializeTree
+from  post_id import *
 
 
 
-filename = "tree_xdb9dj.json"
-tree_json = load_file(filename)
-tree = load_tree(tree_json)
-tree.show()
+
+if __name__ == "__main__":
+    filename = get_file(POST2)
+    tree_obj = DeserializeTree()
+    tree_json = tree_obj.load_file(filename)
+    tree = tree_obj.load_tree(tree_json)
+    tree.show()
 
 
 
