@@ -10,8 +10,11 @@ def create_multigraph(reply_tree):
     for comment_node in reply_tree.all_nodes_itr():
         nid = comment_node.identifier
         parent = reply_tree.parent(nid)
+        if parent==None:
+            continue
         child = reply_tree.get_node(nid)
-        # make a directed edge
+        print(parent)
+        # make a directed edge child -> parent
 
 
 if __name__ == "__main__":
