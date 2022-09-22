@@ -49,6 +49,7 @@ def get_reddit_instance(credentials):
 if __name__=="__main__":
     #settings
     credentials = 'client_secrets.json'
+    # edw
     submission_id = "xdb9dj"
 
     reddit = get_reddit_instance(credentials)

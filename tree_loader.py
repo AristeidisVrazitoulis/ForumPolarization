@@ -6,7 +6,7 @@ import json
 from treelib import Tree
 
 
-class DeserializeTree:
+class TreeLoader:
     
     def __init__(self):
         self.tree = Tree()
@@ -39,11 +39,11 @@ class DeserializeTree:
 
         parent = self.id    
         for counter,value in enumerate(json_tree[node_name]['children']):  
-            child = list(value)[0]
-            child_data = value[child]["data"]
+            child_name = list(value)[0]
+            child_data = value[child_name]["data"]
             self.id += 1
             self.tree.create_node(
-                child, 
+                child_name, 
                 self.id, 
                 parent=parent, 
                 data={"body":child_data["body"],"score":child_data["score"]}
@@ -57,7 +57,7 @@ class DeserializeTree:
 
 if __name__ == "__main__":
     from  post_id import *
-    deserialize = DeserializeTree()
+    deserialize = TreeLoader()
     tree_json = deserialize.load_file(get_file_name(POST2))
     tree = deserialize.load_tree(tree_json)
     tree.show()
