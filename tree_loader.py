@@ -17,6 +17,7 @@ class TreeLoader:
     # TEMPORARY
     def initialize_tree(self):
         self.tree = Tree()
+        self.id = 0
 
     # returns json file
     def load_file(self,filename):
@@ -25,8 +26,17 @@ class TreeLoader:
             tree_data = json.load(f)
         return tree_data
 
+    def start_tree(self, parent_name, tree_json):
+        self.initialize_tree()
+        # initialize root node
+        self.tree.create_node(parent_name, self.id)
+        self.users.add(parent_name)
+        print(type(tree_json[parent_name]['children']))
+        return self.load_tree(tree_json[parent_name]['children'],0)
+
+
     # returns a treelib object
-    def load_tree(self,json_tree, parent=None):
+    def load_tree(self, json_tree, parent=None):
         # deserializes json object and returns a treelib object
         node_name,_ = list(json_tree.items())[0]
         self.users.add(node_name)
@@ -57,10 +67,20 @@ class TreeLoader:
 
 if __name__ == "__main__":
     from  post_id import *
-    deserialize = TreeLoader()
-    tree_json = deserialize.load_file(get_file_name(POST2))
-    tree = deserialize.load_tree(tree_json)
-    tree.show()
+    tree_loader = TreeLoader()
+    tree_json = tree_loader.load_file("coronavirus.json")
+    old_json = tree_loader.load_file(get_file_name(POST2))
+    t = ""
+    print(type(old_json))
+    print()
+    for tree_item in tree_json.items():
+        tree_loader.initialize_tree()
+        json_tree = {tree_item[0] : tree_item[1]}
+        t = tree_loader.load_tree(json_tree)
+        # break
+            
+    # print(old_json)
+        t.show()
 
 
 
