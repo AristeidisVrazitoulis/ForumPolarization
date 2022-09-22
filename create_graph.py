@@ -1,4 +1,5 @@
 from deserialize_tree import DeserializeTree
+import networkx as nx
 from post_id import *
 
 
@@ -7,15 +8,18 @@ from post_id import *
 # returns a graph
 
 def create_multigraph(reply_tree):
+    ucg = nx.DiGraph()
+
     for comment_node in reply_tree.all_nodes_itr():
         nid = comment_node.identifier
         parent = reply_tree.parent(nid)
         if parent==None:
             continue
         child = reply_tree.get_node(nid)
-        print(parent)
-        # make a directed edge child -> parent
+        # make a directed edge  parent -> child
+        ucg.add_edge(parent,child)
 
+        
 
 if __name__ == "__main__":
     filename = get_file_name(POST2)
