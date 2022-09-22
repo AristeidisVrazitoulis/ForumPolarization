@@ -36,7 +36,7 @@ class RedditParser():
         tree.create_node(str(submission.author), str(submission.id)) 
         # traverse the tree
         for comment in submission.comments.list():
-            if comment.author == "AutoModerator":continue
+            #if comment.author == "AutoModerator":continue
             tree.create_node(
                 str(comment.author),
                 str(comment.id), 
@@ -48,11 +48,11 @@ class RedditParser():
 
     # extracts top submissions of a subreddit
     def extract_top_submissions(self, subreddit, limit):
-        submission_ids = set()
+        submission_ids = []
         submissions = subreddit.hot(limit=limit)
 
         for sub in submissions:
-            submission_ids.add(sub.id)
+            submission_ids.append(sub.id)
         
         return submission_ids
             
@@ -81,9 +81,12 @@ if __name__ == "__main__":
     conspiracy_sub = reddit.subreddit("conspiracy")
 
     corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 10)
+    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 10)
     # ids = ["xkti8v", "xdn27t"]
-    print(corona_subs)
-    json_string = reddit_parser.create_merged_json(list(corona_subs))
+
+    json_string_corona = reddit_parser.create_merged_json(corona_subs)
+    json_string_conspiracy = reddit_parser.create_merged_json(conspiracy_subs)
 
     # tree = create_tree(reddit, submission_id)
-    reddit_parser.write_json_to_file("coronavirus.json",json_string)
+    reddit_parser.write_json_to_file("coronavirus.json",json_string_corona)
+    reddit_parser.write_json_to_file("conspiracy.json",json_string_conspiracy)

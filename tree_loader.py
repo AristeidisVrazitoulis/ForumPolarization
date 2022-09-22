@@ -61,6 +61,10 @@ class TreeLoader:
             self.load_tree(json_tree[node_name]['children'][counter], parent)
             
         return self.tree
+
+    # returns a list of treelib objects
+    def get_trees_from_json(self, filename):
+        pass
     
 
 
@@ -68,18 +72,14 @@ class TreeLoader:
 if __name__ == "__main__":
     from  post_id import *
     tree_loader = TreeLoader()
-    tree_json = tree_loader.load_file("coronavirus.json")
-    old_json = tree_loader.load_file(get_file_name(POST2))
+    tree_json = tree_loader.load_file("conspiracy.json")
+
     t = ""
-    print(type(old_json))
-    print()
     for tree_item in tree_json.items():
         tree_loader.initialize_tree()
         json_tree = {tree_item[0] : tree_item[1]}
         t = tree_loader.load_tree(json_tree)
-        # break
             
-    # print(old_json)
         t.show()
 
 
