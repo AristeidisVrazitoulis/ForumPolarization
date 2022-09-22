@@ -39,11 +39,11 @@ class DeserializeTree:
 
         parent = self.id    
         for counter,value in enumerate(json_tree[node_name]['children']):  
-            child = list(value)[0]
-            child_data = value[child]["data"]
+            child_name = list(value)[0]
+            child_data = value[child_name]["data"]
             self.id += 1
             self.tree.create_node(
-                child, 
+                child_name, 
                 self.id, 
                 parent=parent, 
                 data={"body":child_data["body"],"score":child_data["score"]}
