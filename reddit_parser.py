@@ -24,13 +24,13 @@ class RedditParser():
         folder = r"tree_data/"
         path_name = folder+filename
         with open(path_name,"w") as f:
-            f.write(json.dumps(json_str))
+            f.write(json.dumps(json_str,indent=2))
         #tree.save2file(path_name+".txt")
         
         
     def create_tree(self, submission_id):
         submission = self.reddit.submission(submission_id)
-        submission.comments.replace_more(limit=None)
+        submission.comments.replace_more()
         tree = Tree()
         # root node
         tree.create_node(str(submission.author), str(submission.id)) 
@@ -49,23 +49,29 @@ class RedditParser():
     # extracts top submissions of a subreddit
     def extract_top_submissions(self, subreddit, limit):
         submission_ids = []
-        submissions = subreddit.hot(limit=limit)
-
+        submissions = subreddit.search("vaccine", limit=limit)
         for sub in submissions:
             submission_ids.append(sub.id)
         
         return submission_ids
+
+    # takes a list of ids andd returns a set of trees (of comments) of treelib object
+    def get_trees_by_id(self, ids):
+        trees = set()
+        for id in ids:
+            trees.add(self.create_tree(id))
+        return trees
+
             
     # puts all trees in a json string
-    def create_merged_json(self, subs):
-        tree = self.create_tree(subs[0])
-        json_str = json.loads(tree.to_json(with_data=True))
-        for sub_id in subs[1:]:
-            tree = self.create_tree(sub_id)
-            tree_json = json.loads(tree.to_json(with_data=True))
-            json_str.update(tree_json)
-        
-        return json_str
+    def create_merged_json(self, trees):
+        json_obj = {}
+        for tree in trees:
+            json_tree = json.loads(tree.to_json(with_data=True))
+            root_name = tree.get_node(tree.root).tag
+            json_obj[root_name] = json_tree[root_name]
+
+        return json_obj
     
 
 if __name__ == "__main__":
@@ -80,13 +86,16 @@ if __name__ == "__main__":
     # negative sub
     conspiracy_sub = reddit.subreddit("conspiracy")
 
-    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 10)
-    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 10)
+
+    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 5)
+    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 5)
+
     # ids = ["xkti8v", "xdn27t"]
-
-    json_string_corona = reddit_parser.create_merged_json(corona_subs)
-    json_string_conspiracy = reddit_parser.create_merged_json(conspiracy_subs)
-
-    # tree = create_tree(reddit, submission_id)
-    reddit_parser.write_json_to_file("coronavirus.json",json_string_corona)
-    reddit_parser.write_json_to_file("conspiracy.json",json_string_conspiracy)
+    corona_trees = reddit_parser.get_trees_by_id(corona_subs)
+    conspiracy_trees = reddit_parser.get_trees_by_id(conspiracy_subs)
+    
+    json_dict_corona = reddit_parser.create_merged_json(corona_trees)
+    json_dict_conspiracy = reddit_parser.create_merged_json(conspiracy_trees)
+    # #tree = create_tree(reddit, submission_id)
+    reddit_parser.write_json_to_file("coronavirus.json", json_dict_corona)
+    reddit_parser.write_json_to_file("conspiracy.json",json_dict_conspiracy)

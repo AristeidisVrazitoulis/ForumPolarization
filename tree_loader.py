@@ -72,7 +72,7 @@ class TreeLoader:
 if __name__ == "__main__":
     from  post_id import *
     tree_loader = TreeLoader()
-    tree_json = tree_loader.load_file("conspiracy.json")
+    tree_json = tree_loader.load_file("coronavirus.json")
 
     t = ""
     for tree_item in tree_json.items():
