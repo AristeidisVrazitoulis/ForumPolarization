@@ -63,7 +63,7 @@ class RedditParser():
         return trees
 
             
-    # puts all trees in a json string
+    # puts all trees in a dictionary
     def create_merged_json(self, trees):
         json_obj = {}
         for tree in trees:
@@ -93,9 +93,11 @@ if __name__ == "__main__":
     # ids = ["xkti8v", "xdn27t"]
     corona_trees = reddit_parser.get_trees_by_id(corona_subs)
     conspiracy_trees = reddit_parser.get_trees_by_id(conspiracy_subs)
+    print(len(corona_trees))
     
     json_dict_corona = reddit_parser.create_merged_json(corona_trees)
     json_dict_conspiracy = reddit_parser.create_merged_json(conspiracy_trees)
+    
     # #tree = create_tree(reddit, submission_id)
     reddit_parser.write_json_to_file("coronavirus.json", json_dict_corona)
     reddit_parser.write_json_to_file("conspiracy.json",json_dict_conspiracy)

@@ -4,7 +4,7 @@ this file takes as input a json file and can return a treelib object
 '''
 import json
 from treelib import Tree
-
+import copy
 
 class TreeLoader:
     
@@ -14,7 +14,6 @@ class TreeLoader:
         self.id = 0
         self.users = set()
 
-    # TEMPORARY
     def initialize_tree(self):
         self.tree = Tree()
         self.id = 0
@@ -26,16 +25,7 @@ class TreeLoader:
             tree_data = json.load(f)
         return tree_data
 
-    def start_tree(self, parent_name, tree_json):
-        self.initialize_tree()
-        # initialize root node
-        self.tree.create_node(parent_name, self.id)
-        self.users.add(parent_name)
-        print(type(tree_json[parent_name]['children']))
-        return self.load_tree(tree_json[parent_name]['children'],0)
-
-
-    # returns a treelib object
+    # returns a treelib object by taking as an input a json object
     def load_tree(self, json_tree, parent=None):
         # deserializes json object and returns a treelib object
         node_name,_ = list(json_tree.items())[0]
@@ -57,30 +47,30 @@ class TreeLoader:
                 self.id, 
                 parent=parent, 
                 data={"body":child_data["body"],"score":child_data["score"]}
-                )
+            )
             self.load_tree(json_tree[node_name]['children'][counter], parent)
             
         return self.tree
 
-    # returns a list of treelib objects
+    # returns a list of treelib objects by reading json file
     def get_trees_from_json(self, filename):
-        pass
-    
-
-
+        trees = []
+        tree_json = self.load_file(filename)
+        for tree_item in tree_json.items():
+            self.initialize_tree()
+            json_tree = {tree_item[0] : tree_item[1]}
+            tree = self.load_tree(json_tree)
+            # need of deep copying cause  we have one instance of Tree()
+            trees.append(copy.deepcopy(tree))
+        
+        return trees
+        
 
 if __name__ == "__main__":
-    from  post_id import *
     tree_loader = TreeLoader()
-    tree_json = tree_loader.load_file("coronavirus.json")
+    filename = "coronavirus.json"
+    trees = tree_loader.get_trees_from_json(filename)
 
-    t = ""
-    for tree_item in tree_json.items():
-        tree_loader.initialize_tree()
-        json_tree = {tree_item[0] : tree_item[1]}
-        t = tree_loader.load_tree(json_tree)
-            
-        t.show()
 
 
 
