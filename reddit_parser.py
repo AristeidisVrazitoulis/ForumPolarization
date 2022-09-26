@@ -33,7 +33,7 @@ class RedditParser():
         submission.comments.replace_more()
         tree = Tree()
         # root node
-        tree.create_node(str(submission.author), str(submission.id)) 
+        tree.create_node(str(submission.author), str(submission.id), data={"score":submission.score,"body":submission.selftext}) 
         # traverse the tree
         for comment in submission.comments.list():
             #if comment.author == "AutoModerator":continue
@@ -93,7 +93,6 @@ if __name__ == "__main__":
     # ids = ["xkti8v", "xdn27t"]
     corona_trees = reddit_parser.get_trees_by_id(corona_subs)
     conspiracy_trees = reddit_parser.get_trees_by_id(conspiracy_subs)
-    print(len(corona_trees))
     
     json_dict_corona = reddit_parser.create_merged_json(corona_trees)
     json_dict_conspiracy = reddit_parser.create_merged_json(conspiracy_trees)

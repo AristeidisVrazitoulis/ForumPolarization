@@ -5,13 +5,21 @@ from utils.post_id import *
 import networkx as nx
 import matplotlib.pyplot as plt
 
+perspective = PerspectiveAPI()
+def assign_sign_node(self, child, parent):
+    if child.data["score"] <= 0 and parent.data["score"] <= 0:
+        if perspective.is_prob_insult(child.data['body']) :
+            child.data["score"] = -1
+
+        if perspective.is_prob_insult(parent.data['body']):
+            parent.data["score"] = -1
+
 
 # takes as an input (a/many) treelib 
 # returns a graph
 def create_multigraph(reply_tree):
     ucg = nx.MultiDiGraph()
-    c = 0
-    perspective = PerspectiveAPI()
+    
     for comment_node in reply_tree.all_nodes_itr():
         nid = comment_node.identifier
         child = reply_tree.get_node(nid)
@@ -21,15 +29,11 @@ def create_multigraph(reply_tree):
         if parent is None:
             continue
         
-        if child.data["score"] < 0:
-            if perspective.is_prob_insult(child.data['body']):
-                c += 1
-                print(child.data['body'])
+        assign_sign_node(child, parent)
             
 
         # make a directed edge child -> parent
-        ucg.add_edge(child.tag,parent.tag)
-    print(c)
+        ucg.add_edge(child.tag, parent.tag)
     return ucg
 
 
@@ -47,7 +51,7 @@ if __name__ == "__main__":
     # ucg = create_multigraph(tree)
     # draw_graph(ucg)
     tree_loader = TreeLoader()
-    filename = "coronavirus.json"
+    filename = "conspiracy.json"
     trees = tree_loader.get_trees_from_json(filename)
     for tree in trees:
         ucg = create_multigraph(tree)

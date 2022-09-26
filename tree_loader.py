@@ -34,7 +34,9 @@ class TreeLoader:
             return self.tree
         
         if parent is None:
-            self.tree.create_node(str(node_name), self.id)
+            parent_data = json_tree[node_name]["data"]
+            node_data = {"body":parent_data["body"],"score":parent_data["score"]}
+            self.tree.create_node(str(node_name), self.id,data=node_data)
             parent = 0    
 
         parent = self.id    

@@ -15,7 +15,7 @@ class PerspectiveAPI:
         # All attributes except SEVERE_TOXICITY
         self.attribute_names = ["TOXICITY","IDENTITY_ATTACK","INSULT","PROFANITY","THREAT"]
         # threshold of insult
-        self.threshold = 0.7
+        self.threshold = 0.0
 
         self.client = discovery.build(
             "commentanalyzer",
@@ -36,7 +36,9 @@ class PerspectiveAPI:
     def get_scores(self, comment_text):
         analyze_request = {
             'comment': { 'text': comment_text},
-            'requestedAttributes': self.__get_attributes_dict()
+            'requestedAttributes': self.__get_attributes_dict(),
+            'languages':['en']
+
         }
         response = self.client.comments().analyze(body=analyze_request).execute()
         return response
@@ -48,7 +50,7 @@ class PerspectiveAPI:
 
 if __name__ == "__main__":
     perspective = PerspectiveAPI()
-    response = perspective.is_prob_insult("You're just another brain-dead Muslim here")
+    response = perspective.get_scores("Died suddenly news, private group on fb.. 285k members")
     print(response)
 
 
