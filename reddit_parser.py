@@ -87,8 +87,8 @@ if __name__ == "__main__":
     conspiracy_sub = reddit.subreddit("conspiracy")
 
 
-    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 5)
-    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 5)
+    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 10)
+    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 10)
 
     # ids = ["xkti8v", "xdn27t"]
     corona_trees = reddit_parser.get_trees_by_id(corona_subs)
