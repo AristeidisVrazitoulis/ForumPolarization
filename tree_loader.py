@@ -16,7 +16,7 @@ class TreeLoader:
 
     def initialize_tree(self):
         self.tree = Tree()
-        self.id = 0
+        # self.id = 0
 
     # returns json file
     def load_file(self,filename):
@@ -35,8 +35,7 @@ class TreeLoader:
         
         if parent is None:
             parent_data = json_tree[node_name]["data"]
-            node_data = {"body":parent_data["body"],"score":parent_data["score"]}
-            self.tree.create_node(str(node_name), self.id,data=node_data)
+            self.tree.create_node(str(node_name), self.id,data=parent_data)
             parent = 0    
 
         parent = self.id    
@@ -70,9 +69,10 @@ class TreeLoader:
 
 if __name__ == "__main__":
     tree_loader = TreeLoader()
-    filename = "coronavirus.json"
+    filename = "conspiracy.json"
     trees = tree_loader.get_trees_from_json(filename)
 
+    print(len(tree_loader.users))
 
 
 

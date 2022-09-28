@@ -15,7 +15,7 @@ class PerspectiveAPI:
         # All attributes except SEVERE_TOXICITY
         self.attribute_names = ["TOXICITY","IDENTITY_ATTACK","INSULT","PROFANITY","THREAT"]
         # threshold of insult
-        self.threshold = 0.0
+        self.threshold = 0.75
 
         self.client = discovery.build(
             "commentanalyzer",
