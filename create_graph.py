@@ -6,14 +6,13 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-class UserGraph:
+class GraphManager:
 
     def __init__(self):
         self.perspective = PerspectiveAPI()
 
 
     def determine_edge_sign(self, child, parent):
-        # child.data["score"] = -1 if child.data["score"] < 0 else 1
         edge_sign = child.data["score"]*parent.data["score"]
         #asssign edge sign
         if child.data["score"] < 0 and parent.data["score"] < 0:
@@ -26,6 +25,7 @@ class UserGraph:
 
     def aggregate_graphs(self, graphs):
         pass
+
     # takes as an input (a/many) treelib 
     # returns a graph
     def create_multigraph(self, reply_tree):
@@ -45,6 +45,22 @@ class UserGraph:
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
         return ucg
 
+    def merge_graphs(self, graphs):
+        g = graphs[0]
+
+        for i in range(len(graphs)):
+            g = nx.compose(g, graphs[i])
+        
+        return g
+
+    def export_graph(self, graph, filename, data=False):
+        filepath = "graph_data/{}".format(filename)
+        nx.write_edgelist(graph, filepath, data=data)
+
+    def import_graph(self, filename):
+        filepath = "graph_data/{}".format(filename)
+        return nx.read_edgelist(filepath)
+
 
     def draw_graph(self, ucg):
         nx.draw(ucg)
@@ -54,13 +70,17 @@ class UserGraph:
 if __name__ == "__main__":
    
     tree_loader = TreeLoader()
-    graph = UserGraph()
+    manager = GraphManager()
     filename = "conspiracy.json"
     trees = tree_loader.get_trees_from_json(filename)
     ucgs = []
+    
     for tree in trees:
-        ucg = graph.create_multigraph(tree)
+        ucg = manager.create_multigraph(tree)
         ucgs.append(ucg)
+
+    unified_graph = manager.merge_graphs(ucgs)
+    manager.export_graph(unified_graph, "conspiracy_unified.el")
 
 
 
