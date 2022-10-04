@@ -11,10 +11,11 @@ class GraphManager:
     def __init__(self):
         self.perspective = PerspectiveAPI()
 
-
+    # takes as input a comment and the answer of the comment
+    # and determines the sign of the edge
     def determine_edge_sign(self, child, parent):
         edge_sign = child.data["score"]*parent.data["score"]
-        #asssign edge sign
+        # assign edge sign
         if child.data["score"] < 0 and parent.data["score"] < 0:
             if self.perspective.is_prob_insult(child.data["body"]):
                 print(child.data["body"])
@@ -26,8 +27,8 @@ class GraphManager:
     def aggregate_graphs(self, graphs):
         pass
 
-    # takes as an input (a/many) treelib 
-    # returns a graph
+    # takes as an input a treelib 
+    # returns a multigraph
     def create_multigraph(self, reply_tree):
         ucg = nx.MultiDiGraph()
         
@@ -47,10 +48,8 @@ class GraphManager:
 
     def merge_graphs(self, graphs):
         g = graphs[0]
-
-        for i in range(len(graphs)):
-            g = nx.compose(g, graphs[i])
-        
+        for i in range(1,len(graphs)):
+            g = nx.compose(g, graphs[i]) 
         return g
 
     def export_graph(self, graph, filename, data=False):
@@ -63,37 +62,26 @@ class GraphManager:
 
 
     def draw_graph(self, ucg):
-        nx.draw(ucg)
+        nx.draw(ucg, node_size=30)
         plt.show()
         
 
 if __name__ == "__main__":
    
-    tree_loader = TreeLoader()
+    # tree_loader = TreeLoader()
     manager = GraphManager()
-    filename = "conspiracy.json"
-    trees = tree_loader.get_trees_from_json(filename)
-    ucgs = []
+    # filename = "coronavirus.json"
+
+    # trees = tree_loader.get_trees_from_json(filename)
+    # ucgs = []
     
-    for tree in trees:
-        ucg = manager.create_multigraph(tree)
-        ucgs.append(ucg)
+    # for tree in trees:
+    #     ucg = manager.create_multigraph(tree)
+    #     ucgs.append(ucg)
 
-    unified_graph = manager.merge_graphs(ucgs)
-    manager.export_graph(unified_graph, "conspiracy_unified.el")
+    # unified_graph = manager.merge_graphs(ucgs)
+    # manager.export_graph(unified_graph, "coronavirus_unified.el")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    corona_graph = manager.import_graph("coronavirus_unified.el")
+    manager.draw_graph(corona_graph)
+    # conspiracy_graph = manager.import_graph("conspiracy_unified.el")

@@ -30,6 +30,7 @@ class TreeLoader:
         # deserializes json object and returns a treelib object
         node_name,_ = list(json_tree.items())[0]
         self.users.add(node_name)
+        # if it is a leaf
         if "children" not in json_tree[node_name]:
             return self.tree
         
