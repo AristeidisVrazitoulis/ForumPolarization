@@ -53,6 +53,7 @@ class TreeLoader:
             self.load_tree(json_tree[node_name]['children'][counter], parent)
             
         return self.tree
+    
 
     # returns a list of treelib objects by reading json file
     def get_trees_from_json(self, filename):

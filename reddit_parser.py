@@ -2,11 +2,12 @@
 This file takes as an input a post id from reddit and saves the tree as json to disk
 '''
 import json
+from re import L
 import praw
 from treelib import Tree
 
 class RedditParser():
-
+    
     def __init__(self, credentials):
         self.credentials = credentials
         with open(credentials) as f:
@@ -19,13 +20,15 @@ class RedditParser():
                             redirect_uri=creds['redirect_uri'],
                             refresh_token=creds['refresh_token'])
 
+        
+        self.delete_ids = set()
+
 
     def write_json_to_file(self, filename, json_str):
         folder = r"tree_data/"
         path_name = folder+filename
         with open(path_name,"w") as f:
             f.write(json.dumps(json_str,indent=2))
-        #tree.save2file(path_name+".txt")
         
         
     def create_tree(self, submission_id):
@@ -36,9 +39,11 @@ class RedditParser():
         tree.create_node(str(submission.author), str(submission.id), data={"score":submission.score,"body":submission.selftext}) 
         # traverse the tree
         for comment in submission.comments.list():
-            #if comment.author == "AutoModerator":continue
+            comment_author = str(comment.author)
+            author_name = comment_author+str(comment.id) if comment_author == "None" else comment_author
+
             tree.create_node(
-                str(comment.author),
+                author_name,
                 str(comment.id), 
                 parent=str(comment.parent_id[3:]),
                 data = {"body":comment.body, "score":comment.score}
