@@ -92,9 +92,14 @@ if __name__ == "__main__":
     corona_graph = manager.import_graph("coronavirus_unified.txt")
     conspiracy_graph = manager.import_graph("conspiracy_unified.txt")
     # # tups = community.kernighan_lin_bisection(corona_graph)
-    merged = manager.merge_graphs([corona_graph, conspiracy_graph])
+    setA = set(corona_graph.nodes)
+    setB = set(conspiracy_graph.nodes)
 
-    manager.export_graph(merged, "merged_graph.txt")
+    setC = setA.intersection(setB)
+    print(setC)
+    # merged = manager.merge_graphs([corona_graph, conspiracy_graph])
+
+    # manager.export_graph(merged, "merged_graph.txt")
 
     
     # conspiracy_graph = manager.import_graph("conspiracy_unified.el")
