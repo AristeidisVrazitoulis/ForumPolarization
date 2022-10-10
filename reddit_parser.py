@@ -92,8 +92,8 @@ if __name__ == "__main__":
     conspiracy_sub = reddit.subreddit("conspiracy")
 
 
-    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 10)
-    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 10)
+    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 20)
+    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 20)
 
     # ids = ["xkti8v", "xdn27t"]
     corona_trees = reddit_parser.get_trees_by_id(corona_subs)
@@ -103,5 +103,5 @@ if __name__ == "__main__":
     json_dict_conspiracy = reddit_parser.create_merged_json(conspiracy_trees)
     
     # #tree = create_tree(reddit, submission_id)
-    reddit_parser.write_json_to_file("coronavirus.json", json_dict_corona)
-    reddit_parser.write_json_to_file("conspiracy.json",json_dict_conspiracy)
+    reddit_parser.write_json_to_file("coronavirusplus.json", json_dict_corona)
+    reddit_parser.write_json_to_file("conspiracyplus.json",json_dict_conspiracy)

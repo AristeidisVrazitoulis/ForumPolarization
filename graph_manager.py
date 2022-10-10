@@ -54,7 +54,7 @@ class GraphManager:
             g = nx.compose(g, graphs[i]) 
         return g
 
-    # merges all graphs given the trees from a file
+    # merges all trees given from a file
     def get_unified_graph_from_file(self, filename):
         tree_loader = TreeLoader()
         trees = tree_loader.get_trees_from_json(filename)
@@ -83,23 +83,23 @@ class GraphManager:
 if __name__ == "__main__":
    
     manager = GraphManager()
-    filename = "coronavirus.json"
+    filename = "conspiracyplus.json"
 
-    # unified_graph = manager.get_unified_graph_from_file(filename)
+    #unified_graph = manager.get_unified_graph_from_file(filename)
     
-    # manager.export_graph(unified_graph, "coronavirus_unified.el")
+    #manager.export_graph(unified_graph, "conspiracy_unified.txt")
 
     corona_graph = manager.import_graph("coronavirus_unified.txt")
     conspiracy_graph = manager.import_graph("conspiracy_unified.txt")
-    # # tups = community.kernighan_lin_bisection(corona_graph)
+     # tups = community.kernighan_lin_bisection(corona_graph)
     setA = set(corona_graph.nodes)
     setB = set(conspiracy_graph.nodes)
 
     setC = setA.intersection(setB)
     print(setC)
-    # merged = manager.merge_graphs([corona_graph, conspiracy_graph])
+    merged = manager.merge_graphs([corona_graph, conspiracy_graph])
 
-    # manager.export_graph(merged, "merged_graph.txt")
+    manager.export_graph(merged, "merged_graph.txt")
 
     
     # conspiracy_graph = manager.import_graph("conspiracy_unified.el")

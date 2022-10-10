@@ -1,9 +1,13 @@
+'''
+Converts edge list to csv file for the gephi software
+'''
+
 theme = "merged"
 filename = "merged_graph.txt"
 
 first_line = "Source Target\n"
 final_content = ""
-with open(filename, "r") as f1, open(theme+"_gephi.csv", "w") as f2:
+with open(filename, "r") as f1, open("gephi_format/"+theme+"_gephi.csv", "w") as f2:
     content = f1.read()
     final_content = first_line+content
     f2.write(final_content)
