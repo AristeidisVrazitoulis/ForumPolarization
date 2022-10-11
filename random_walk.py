@@ -1,9 +1,9 @@
 from graph_manager import GraphManager
 from networkx.algorithms import community
+from networkx.algorithms import edge_betweenness_centrality
 
-import networkx as nx
+# import networkx as nx
 import random
-
 class RandomWalkPolarity:
 
     def __init__(self, graph):
@@ -53,6 +53,7 @@ class RandomWalkPolarity:
             starting_node = self.get_starting_node_from_group(starting_group_name)
             for j in range(self.local_times):
                 ending_node = self.random_walk(starting_node, self.walk_limit)
+                # if the starting and the ending group is the same
                 if self.determine_node_group(ending_node) == starting_group_name:
                     same_group_count += 1
         
@@ -77,21 +78,26 @@ class RandomWalkPolarity:
 if __name__ == "__main__":
 
     manager = GraphManager()
-    filename = "merged_graph.txt"
+    filename = "sample_graph.txt"
     multi_graph = manager.import_graph(filename)
+    
     print(len(multi_graph))
+    
+
     # graph = nx.Graph(multi_graph)
     # graph.remove_node("AutoModerator")
-    rw = RandomWalkPolarity(multi_graph)
+    # rw = RandomWalkPolarity(multi_graph)
     
-    probXX,probXY = rw.calculate_probs_from_group("groupA")
+    # probXX,probXY = rw.calculate_probs_from_group("groupA")
         
-    probYY,probYX = rw.calculate_probs_from_group("groupB")
+    # probYY,probYX = rw.calculate_probs_from_group("groupB")
 
-    polarity = rw.measure_polarity(probXX,probYY,probXY,probYX)
+    # polarity = rw.measure_polarity(probXX,probYY,probXY,probYX)
     
-
-    print(polarity)
+    print("Ok")
+    # edge_betweenness_centrality(multi_graph)
+    print("DONEEE")
+    # print(polarity)
         
 
 
