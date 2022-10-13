@@ -1,3 +1,4 @@
+from httplib2 import ServerNotFoundError
 from perspective import PerspectiveAPI
 import networkx as nx
 from utils.post_id import *
@@ -11,7 +12,10 @@ from tree_loader import TreeLoader
 class GraphManager:
 
     def __init__(self):
-        self.perspective = PerspectiveAPI()
+        try:
+            self.perspective = PerspectiveAPI()
+        except ServerNotFoundError:
+            print("No wifi")
 
     # takes as input a comment and the answer of the comment
     # and determines the sign of the edge

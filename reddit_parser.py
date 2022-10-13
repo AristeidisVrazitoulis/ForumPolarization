@@ -2,7 +2,6 @@
 This file takes as an input a post id from reddit and saves the tree as json to disk
 '''
 import json
-from re import L
 import praw
 from treelib import Tree
 

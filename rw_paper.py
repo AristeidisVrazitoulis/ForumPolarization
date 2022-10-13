@@ -9,8 +9,7 @@ from graph_manager import GraphManager
 from random_walk import RandomWalkPolarity
 
 
-percent = 0.75
-#percent = 0.10
+percent = 0.5
 
 #side = sys.argv[2] # left, right or both
 
@@ -31,9 +30,6 @@ dict_right = {node_name:1 for node_name in right}
 
 
 
-
-
-
 def getRandomNodes(G,k): # parameter k = number of random nodes to generate
 	nodes = G.nodes()
 	random_nodes = {}
@@ -42,83 +38,55 @@ def getRandomNodes(G,k): # parameter k = number of random nodes to generate
 		random_nodes[nodes[random_num]] = 1
 	return random_nodes
 
-def getRandomNodesFromLabels(G,k,flag): # parameter k = no. of random nodes to generate, flag could be "left", "right" or "both". If both, k/2 from one side and k/2 from the other side are generated.
-	random_nodes = []
-	random_nodes1 = {}
-	if(flag=="left"):
-		for i in range(k):
-			random_num = random.randint(0,len(left)-1)
-			random_nodes.append(left[random_num])
-	elif(flag=="right"):
-		for i in range(k):
-			random_num = random.randint(0,len(right)-1)
-			random_nodes.append(right[random_num])
-	else:
-		for i in range(k/2):
-			random_num = random.randint(0,len(left)-1)
-			random_nodes.append(left[random_num])
-		for i in range(k/2):
-			random_num = random.randint(0,len(right)-1)
-			random_nodes.append(right[random_num])
-	for ele in random_nodes:
-		random_nodes1[ele] = 1
-	return random_nodes1
 
-def getNodesFromLabelsWithHighestDegree(G,k,flag): # first take the nodes with the highest degree according to the "flag" and then take the top $k$
+def getRandomNodesFromLabelsv2(k,group,for_both=False):
+	if not for_both:
+		return getRandomNodesFromLabels(k,group)
+
+	left_map = getRandomNodesFromLabels(k/2,left)
+	right_map = getRandomNodesFromLabels(k/2,right)
+	return left_map.update(right_map)
+	
+
+# parameter k = no. of random nodes to generate, flag could be "left", "right" or "both". If both, k/2 from one side and k/2 from the other side are generated.
+def getRandomNodesFromLabels(k,group): 
+	random_nodes = []
+	for i in range(k):
+		random_num = random.randint(0,len(group)-1)
+		random_nodes.append(group[random_num])
+	
+	random_nodes_map = {elem : 1 for elem in random_nodes}
+	return random_nodes_map
+
+
+
+def getNodesFromLabelsWithHighestDegree(G,k,group_dict): # first take the nodes with the highest degree according to the "flag" and then take the top $k$
 	random_nodes = {}
-	dict_degrees = {}
-	for node in G.nodes():
-		dict_degrees[node] = G.degree(node)
-	sorted_dict = sorted(dict_degrees.items(), key=itemgetter(1), reverse=True) # sorts nodes by degrees
-#	sorted_dict = sorted_dict[:k]
-	if flag=="left":
-		count = 0
-		for i in sorted_dict:
-			if(count>k):
-				break
-			if(not dict_left.has_key(i[0])):
-				continue
-			random_nodes[i[0]] = i[1]
-			count += 1
-	elif flag=="right":
-		count = 0
-		for i in sorted_dict:
-			if(count>k):
-				break
-			if(not dict_right.has_key(i[0])):
-				continue
-			random_nodes[i[0]] = i[1]
-			count += 1
-	else:
-		count = 0
-		for i in sorted_dict:
-			if(count>k/2):
-				break
-			if(not dict_left.has_key(i[0])):
-				continue
-			random_nodes[i[0]] = i[1]
-			count += 1
-		count = 0
-		for i in sorted_dict:
-			if(count>k/2):
-				break
-			if(not dict_right.has_key(i[0])):
-				continue
-			random_nodes[i[0]] = i[1]
-			count += 1
+	dict_degrees = { node : G.degree(node) for node in G.nodes() }
+
+	# sorts nodes by degrees
+	sorted_dict = sorted(dict_degrees.items(), key=itemgetter(1), reverse=True) 
+	
+	count = 0
+	for node in sorted_dict:
+		if(count>k):
+			break
+		if(not node[0] in group_dict):
+			continue
+		random_nodes[node[0]] = node[1]
+		count += 1
 
 	return random_nodes
 
-def performRandomWalk(G,starting_node,user_nodes_side1,user_nodes_side2): # returns if we ended up in a "left" node or a "right" node
-	dict_nodes = {} # contains unique nodes seen till now
-	nodes = G.nodes()
-	num_edges = len(G.edges())
+# returns if we ended up in a "left" node or a "right" node
+def performRandomWalk(G,starting_node,user_nodes_side1,user_nodes_side2): 
+	# contains unique nodes seen till now
+	dict_nodes = {} 
+	
 	step_count = 0
-#	total_other_nodes = len(user_nodes.keys())
-	flag = 0
 	side = ""
 
-	while(flag!=1):
+	while(True):
 		# print "starting from ", starting_node, "num nodes visited ", len(dict_nodes.keys()), " out of ", len(nodes)
 		neighbors = list(G.neighbors(starting_node))
 		random_num = random.randint(0,len(neighbors)-1)
@@ -126,20 +94,20 @@ def performRandomWalk(G,starting_node,user_nodes_side1,user_nodes_side2): # retu
 		dict_nodes[starting_node] = 1
 		step_count += 1
 		if starting_node in user_nodes_side1:
-			side = "left"
-			flag = 1
+			side =  "left"
+			break
 		if starting_node in user_nodes_side2:
 			side = "right"
-			flag = 1
+			break
 #		if(step_count>num_edges**2): # if stuck
 #			break
 #		if(step_count%100000==0):
 #			print >> sys.stderr, step_count, "steps reached"
 	return side
 
-def performRandomWalkFull(G,starting_node,user_nodes): # returns the number of steps taken before reaching *ALL* node from the set of user nodes. difference from the above method is that we should reach all nodes, instead of just any one of them.
+# returns the number of steps taken before reaching *ALL* node from the set of user nodes. difference from the above method is that we should reach all nodes, instead of just any one of them.
+def performRandomWalkFull(G,starting_node,user_nodes): 
 	dict_nodes = {} # contains unique nodes seen till now
-	nodes = G.nodes()
 	num_edges = len(G.edges())
 	step_count = 0
 	total_other_nodes = len(user_nodes.keys())
@@ -155,13 +123,13 @@ def performRandomWalkFull(G,starting_node,user_nodes): # returns the number of s
 		step_count += 1
 		if(user_nodes.has_key(starting_node)):
 			dict_already_seen_nodes[starting_node] = 1
-			print >> sys.stderr, "seen nodes ", len(dict_already_seen_nodes.keys())
+			print( sys.stderr, "seen nodes ", len(dict_already_seen_nodes.keys()))
 			if(len(dict_already_seen_nodes.keys())==total_other_nodes):
 				flag = 1
 		if(step_count>num_edges**2): # if stuck
 			break
 		if(step_count%100000==0):
-			print >> sys.stderr, step_count, "steps reached"
+			print(sys.stderr, step_count, "steps reached")
 	return step_count
 
 def getDict(nodes_list):
@@ -170,10 +138,33 @@ def getDict(nodes_list):
 		dict_nodes[node] = 1
 	return dict_nodes
 
+def montecarlo_random_walk_group(user_nodes1, user_nodes2, is_left=True):
+	endup_left = 0
+	endup_right = 0
+
+	user_nodes_list = list(user_nodes1.keys())
+	for i in range(len(user_nodes_list)-1):
+		node = user_nodes_list[i]
+		other_nodes = user_nodes_list[:i] + user_nodes_list[i+1:]
+		other_nodes_dict = getDict(other_nodes)
+		if is_left:
+			side = performRandomWalk(G,node,other_nodes_dict,user_nodes2)
+		else: side = performRandomWalk(G,node,user_nodes2, other_nodes_dict)
+
+		if side=="left":
+			endup_left += 1
+		elif side=="right":
+			endup_right += 1
+
+	return (endup_left, endup_right)
+
+
+
+n_experiments = 100
 # also assume that you are given a set of nodes (news articles) that have been read by a user
 # user_nodes = getRandomNodes(G,2) # for now, using a random set of nodes. Use a specific set later when testing
-
-left_left = 0 # start_end
+# start_end
+left_left = 0 
 left_right = 0
 right_right = 0
 right_left = 0
@@ -183,64 +174,38 @@ right_percent = int(percent*len(dict_right.keys()))
 #left_percent = int(0.1*len(dict_left.keys()))
 #right_percent = int(0.1*len(dict_right.keys()))
 
-for j in range(1,100):
-	user_nodes_left = getRandomNodesFromLabels(G,left_percent,"left")
-#	print user_nodes_left
-	user_nodes_right = getRandomNodesFromLabels(G,right_percent,"right")
-#	print user_nodes_right
-#	user_nodes_left = getNodesFromLabelsWithHighestDegree(G,10,"left")
-#	user_nodes_right = getNodesFromLabelsWithHighestDegree(G,10,"right")
-#	user_nodes_left = dict_left
-#	user_nodes_right = dict_right
-#	print user_nodes
+for _ in range(n_experiments):
+	user_nodes_left = getNodesFromLabelsWithHighestDegree(G, left_percent, left)
+	user_nodes_right = getNodesFromLabelsWithHighestDegree(G,right_percent, right)
 
 # print "randomly selected user nodes ", user_nodes
 
+	(endup_left, endup_right) = montecarlo_random_walk_group(user_nodes_left, user_nodes_right)
+	left_left += endup_left
+	left_right += endup_right
 
-	user_nodes_left_list = list(user_nodes_left.keys())
-	for i in range(len(user_nodes_left_list)-1):
-#		node = getRandomNodes(G,1).keys()[0]
-		node = user_nodes_left_list[i]
-		other_nodes = user_nodes_left_list[:i] + user_nodes_left_list[i+1:]
-		other_nodes_dict = getDict(other_nodes)
-		side = performRandomWalk(G,node,other_nodes_dict,user_nodes_right)
-		#print(side)
-		if side=="left":
-			left_left += 1
-		elif side=="right":
-			left_right += 1
+	(endup_left, endup_right) = montecarlo_random_walk_group(user_nodes_right, user_nodes_left, False)
+	right_left += endup_left
+	right_right += endup_right
 
-	user_nodes_right_list = list(user_nodes_right.keys())
-	for i in range(len(user_nodes_right_list)-1):
-#		node = getRandomNodes(G,1).keys()[0]
-		node = user_nodes_right_list[i]
-		other_nodes = user_nodes_right_list[:i] + user_nodes_right_list[i+1:]
-		other_nodes_dict = getDict(other_nodes)
-		side = performRandomWalk(G,node,user_nodes_left,other_nodes_dict)
-		if(side=="left"):
-			right_left += 1
-		elif(side=="right"):
-			right_right += 1
-		else: # side == ""
-			continue
-	if(j%1==0):
-		print("OKA",j)
+	
+	print("OKA", _)
 	
 print("left -> left", left_left)
 print("left -> right", left_right)
 print("right -> right", right_right)
 print("right -> left", right_left)
 
-e1 = left_left*1.0/(left_left+right_left)
-e2 = left_right*1.0/(left_right+right_right)
-e3 = right_left*1.0/(left_left+right_left)
-e4 = right_right*1.0/(left_right+right_right)
+p_xx = left_left*1.0/(left_left+right_left)
+p_xy = left_right*1.0/(left_right+right_right)
+p_yx = right_left*1.0/(left_left+right_left)
+p_yy = right_right*1.0/(left_right+right_right)
 
 print("\n********************" + "FILOS" + " -- % seed nodes " + str(percent) + " *********************")
-print(e1, e2)
-print(e3, e4)
+print(p_xx, p_xy)
+print(p_yx, p_yy)
 
-print(e1*e4 - e2*e3)
+print(p_xx*p_yy - p_xy*p_yx)
 print("--------------------------------------")
 
 """

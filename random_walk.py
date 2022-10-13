@@ -1,6 +1,5 @@
 from graph_manager import GraphManager
 from networkx.algorithms import community
-from networkx.algorithms import edge_betweenness_centrality
 
 # import networkx as nx
 import random
