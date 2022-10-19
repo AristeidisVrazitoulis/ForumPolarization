@@ -25,7 +25,6 @@ class RandomWalkSimulation:
 		self.n_experiments = n_experiments
 		# try metis
 		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
-		print(len(self.groupA),len(self.groupB))
 		self.count_stats = [0 for i in range(4)]
 		self.p = [0 for i in range(4)]
 		self.map_functions = {True:self.getNodesFromLabelsWithHighestDegree, False:self.getRandomNodesFromLabels}
@@ -79,7 +78,7 @@ class RandomWalkSimulation:
 		while(True):
 			# print "starting from ", starting_node, "num nodes visited ", len(dict_nodes.keys()), " out of ", len(nodes)
 			neighbors = list(self.G.neighbors(starting_node))
-			random_num = random.randint(0,len(neighbors)-1)
+			random_num = random.randint(0, len(neighbors)-1)
 			starting_node = neighbors[random_num]
 			dict_nodes[starting_node] = 1
 			step_count += 1
