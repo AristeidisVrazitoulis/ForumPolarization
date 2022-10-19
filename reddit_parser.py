@@ -96,31 +96,50 @@ class RedditParser():
 
         return json_obj
 
-    def get_json_tree_by_subreddit(self, subreddit_name, tree_category, limit):
-        sub = self.reddit.subreddit(subreddit_name)
-        # controversial_subs = self.extract_controversial_submissions(sub, limit)
-        if tree_category == "top":
-            tree_set = self.extract_top_submissions(sub, limit)
-        elif tree_category == "controversial":
-            tree_set = self.extract_controversial_submissions(sub, limit)
-        elif tree_category == "both":
-            controversial_subs = self.extract_controversial_submissions(sub, limit)
-            relevant_subs = self.extract_top_submissions(sub, limit)
-            tree_set = controversial_subs + relevant_subs
-        else:print("category not found")
+    # takes subreddit and returns the set of post we define(category)
+    def get_all_submissions(self, sub, limit, category="all"):
+        if category != "controversial":
+            top_posts = self.extract_top_submissions(sub, limit)
+        if category != "top":
+            controversial_posts = self.extract_controversial_submissions(sub, limit)
 
-        trees = self.get_trees_by_id(tree_set)
+        if category == "top":
+            return [top_posts]
+        elif category == "controversial":
+            return [controversial_posts]
+        elif category=="both":
+            return [top_posts,controversial_posts]
+        elif category == "all":
+            return [top_posts,controversial_posts, top_posts+controversial_posts]
+        else:
+            print("category not found")
+            return None
+
+    # takes a set of IDs and returns a corresponding json object
+    def get_json_trees_by_postids(self, post_ids):
+        # a list of treelib objects
+        trees = self.get_trees_by_id(post_ids)
+        # makes a json dictionary with those trees
         json_dict = self.create_merged_json(trees)
         return json_dict
     
+    # takes a subreddit name and returns 3 
     def get_all_json_trees(self, subreddit_name, limit):
-        trees = []
-        for category in self.categories:
-            tree = self.get_json_tree_by_subreddit(subreddit_name, category, limit)
-            trees.append(tree)
-        return trees
+        
+        json_trees = []
+        sub = self.reddit.subreddit(subreddit_name)
+        
+        all_subs = self.get_all_submissions(sub,limit)
 
+        for sub_list in all_subs:
+            for post_ids in sub_list:
+                json_trees.append(self.get_json_trees_by_postids(post_ids))
+        return json_trees
 
+    
+    def save_trees_json_todisk(self, json_trees):
+        for i in range(len(json_trees)):
+            self.write_json_to_file("{}_{}.json".format(subreddit_name, self.categories[i]), json_trees[i])
 
 
 
@@ -130,17 +149,16 @@ if __name__ == "__main__":
     #settings
     credentials = 'client_secrets.json'
     save_to_file = True
+    limit = 10
+    subreddit_name = "conspiracy"
 
 
     reddit_parser = RedditParser(credentials)
     reddit = reddit_parser.reddit
-    subreddit_name = "Coronavirus"
 
-    corona_json_trees = reddit_parser.get_all_json_trees(subreddit_name, 10)
+    json_trees = reddit_parser.get_all_json_trees(subreddit_name, limit)
     if save_to_file:
-        for i in range(len(corona_json_trees)):
-            reddit_parser.write_json_to_file("{}_{}.json".format(subreddit_name, reddit_parser.categories[i]), corona_json_trees[i])
-
+        reddit_parser.save_trees_json_todisk(json_trees)
 
     #conspiracy_json = reddit_parser.get_json_trees_by_subreddit("conspiracy", 10)
     
