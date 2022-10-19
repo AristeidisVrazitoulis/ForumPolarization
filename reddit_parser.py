@@ -53,10 +53,27 @@ class RedditParser():
     # extracts top submissions of a subreddit
     def extract_top_submissions(self, subreddit, limit):
         submission_ids = []
-        submissions = subreddit.search("vaccine", limit=limit)
+        submissions = subreddit.search("vaccin", limit=None)
+        print(len(list(submissions)))
         for sub in submissions:
             submission_ids.append(sub.id)
         
+        return submission_ids
+
+
+    # extracts top submissions of a subreddit
+    def extract_controversial_submissions(self, subreddit, limit):
+        submission_ids = []
+        submissions = subreddit.controversial(time_filter="all", limit = None)
+       
+        counter = 0
+        for sub in submissions:
+            if "vaccin" in sub.selftext or "vaccin" in sub.title:
+                #print(sub.selftext)
+                submission_ids.append(sub.id)
+                counter += 1
+                # if counter == limit:
+                #     break
         return submission_ids
 
     # takes a list of ids andd returns a set of trees (of comments) of treelib object
@@ -76,31 +93,38 @@ class RedditParser():
             json_obj[root_name] = json_tree[root_name]
 
         return json_obj
+
+    def get_json_trees_by_subreddit(self, subreddit_name, limit):
+        sub = self.reddit.subreddit(subreddit_name)
+        # controversial_subs = self.extract_controversial_submissions(sub, limit)
+        relevant_subs = self.extract_top_submissions(sub, limit)
+        trees = self.get_trees_by_id(relevant_subs)
+        json_dict = self.create_merged_json(trees)
+        return json_dict
+
     
 
 if __name__ == "__main__":
     #settings
     credentials = 'client_secrets.json'
+    save_to_file = False
+
 
     reddit_parser = RedditParser(credentials)
 
     reddit = reddit_parser.reddit
-    # positive sub
-    coronavirus_sub = reddit.subreddit("Coronavirus")
-    # negative sub
-    conspiracy_sub = reddit.subreddit("conspiracy")
+
+    corona_json = reddit_parser.get_json_trees_by_subreddit("Coronavirus", 10)
+
+    #conspiracy_json = reddit_parser.get_json_trees_by_subreddit("conspiracy", 10)
+    
+    if save_to_file:
+        reddit_parser.write_json_to_file("coronavirus.json", corona_json)
+        #reddit_parser.write_json_to_file("conspiracy.json", conspiracy_json)
 
 
-    corona_subs = reddit_parser.extract_top_submissions(coronavirus_sub, 20)
-    conspiracy_subs = reddit_parser.extract_top_submissions(conspiracy_sub, 20)
+  
 
     # ids = ["xkti8v", "xdn27t"]
-    corona_trees = reddit_parser.get_trees_by_id(corona_subs)
-    conspiracy_trees = reddit_parser.get_trees_by_id(conspiracy_subs)
     
-    json_dict_corona = reddit_parser.create_merged_json(corona_trees)
-    json_dict_conspiracy = reddit_parser.create_merged_json(conspiracy_trees)
-    
-    # #tree = create_tree(reddit, submission_id)
-    reddit_parser.write_json_to_file("coronavirusplus.json", json_dict_corona)
-    reddit_parser.write_json_to_file("conspiracyplus.json",json_dict_conspiracy)
+   

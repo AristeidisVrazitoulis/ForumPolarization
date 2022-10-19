@@ -6,7 +6,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from tree_loader import TreeLoader
 
-
+import time
 
 
 class GraphManager:
@@ -16,17 +16,22 @@ class GraphManager:
             self.perspective = PerspectiveAPI()
         except ServerNotFoundError:
             print("No wifi")
+        self.c = 0
 
     # takes as input a comment and the answer of the comment
     # and determines the sign of the edge
     def determine_edge_sign(self, child, parent):
         edge_sign = child.data["score"]*parent.data["score"]
         # assign edge sign
+        
         if child.data["score"] < 0 and parent.data["score"] < 0:
             if self.perspective.is_prob_insult(child.data["body"]):
                 print(child.data["body"])
                 print("-------------")
                 edge_sign = -1
+            time.sleep(1.05)
+            
+    
         return edge_sign
         
 
@@ -59,6 +64,7 @@ class GraphManager:
         return g
 
     # merges all trees given from a file
+    # returns an nx graph
     def get_unified_graph_from_file(self, filename):
         tree_loader = TreeLoader()
         trees = tree_loader.get_trees_from_json(filename)
@@ -87,23 +93,27 @@ class GraphManager:
 if __name__ == "__main__":
    
     manager = GraphManager()
-    filename = "conspiracyplus.json"
+    # filename = "conspiracy.json"
+    # g = manager.get_unified_graph_from_file(filename)
+    # manager.export_graph(g,"conspiracy.txt")
 
-    #unified_graph = manager.get_unified_graph_from_file(filename)
+
+
+    # corona_graph = manager.import_graph("corona.txt")
+    # conspiracy_graph = manager.import_graph("conspiracy.txt")
+    #  # tups = community.kernighan_lin_bisection(corona_graph)
+    # setA = set(corona_graph.nodes)
+    # setB = set(conspiracy_graph.nodes)
+
+    # setC = setA.intersection(setB)
+    # print(setC)
+    # merged = manager.merge_graphs([corona_graph, conspiracy_graph])
+
+    # manager.export_graph(merged, "merged.txt")
+
     
-    #manager.export_graph(unified_graph, "conspiracy_unified.txt")
+    graph = manager.import_graph("merged.txt")
 
-    corona_graph = manager.import_graph("coronavirus_unified.txt")
-    conspiracy_graph = manager.import_graph("conspiracy_unified.txt")
-     # tups = community.kernighan_lin_bisection(corona_graph)
-    setA = set(corona_graph.nodes)
-    setB = set(conspiracy_graph.nodes)
-
-    setC = setA.intersection(setB)
-    print(setC)
-    merged = manager.merge_graphs([corona_graph, conspiracy_graph])
-
-    manager.export_graph(merged, "merged_graph.txt")
-
+    print(len(graph.nodes))
+    print(len(graph.edges))
     
-    # conspiracy_graph = manager.import_graph("conspiracy_unified.el")

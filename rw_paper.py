@@ -23,7 +23,9 @@ class RandomWalkSimulation:
 		self.G = graph
 		self.sample_percent = sample_percent
 		self.n_experiments = n_experiments
+		# try metis
 		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
+		print(len(self.groupA),len(self.groupB))
 		self.count_stats = [0 for i in range(4)]
 		self.p = [0 for i in range(4)]
 		self.map_functions = {True:self.getNodesFromLabelsWithHighestDegree, False:self.getRandomNodesFromLabels}
@@ -140,7 +142,7 @@ class RandomWalkSimulation:
 		return (endup_left, endup_right)
 
 	# starts and performs the whole random walk algorithm and returns the stats for each case
-	# The variables direction1_direction2 count the times that we performed rw starting from destionation1 and ended up on destination2
+	# The variables direction1_direction2 count the times that we performed rw starting from destination1 and ended up on destination2
 	def perform_random_walk_experiments(self, choose_highest_degree=True):
 		self.is_highest_degree = choose_highest_degree
 		left = list(self.groupA)
@@ -175,10 +177,10 @@ class RandomWalkSimulation:
 
 	# fills the array p of probabilities
 	def compute_probabilities_by_stats(self):
-		self.p[0] = self.count_stats[LEFT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT])
-		self.p[1] = self.count_stats[LEFT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT])
-		self.p[2] = self.count_stats[RIGHT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT])
-		self.p[3] = self.count_stats[RIGHT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT])
+		self.p[0] = round(self.count_stats[LEFT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT]),4)
+		self.p[1] = round(self.count_stats[LEFT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT]),4)
+		self.p[2] = round(self.count_stats[RIGHT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT]),4)
+		self.p[3] = round(self.count_stats[RIGHT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT]),4)
 
 
 	# takes as an input vector p of length 4
@@ -221,7 +223,7 @@ class RandomWalkSimulation:
 			f.write(data_line)
 
 
-#side = sys.argv[2] # left, right or both
+# side = sys.argv[2] # left, right or both
 
 # G = nx.read_weighted_edgelist('news_news_matrix_largest_CC.txt',delimiter=',')
 # G = nx.read_weighted_edgelist('political_blogs_largest_CC.txt',delimiter=',')
@@ -229,13 +231,12 @@ class RandomWalkSimulation:
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "merged_graph.txt"
+	filename = "merged.txt"
 	G = manager.import_graph(filename)
-	sample_percent = 0.50
-	n_experiments = 20
-	select_highest_degree = False
-	save_stat = 1
-
+	sample_percent = 1
+	n_experiments = 50
+	select_highest_degree = True
+	save_stat = False
 	rw = RandomWalkSimulation(G, sample_percent, n_experiments)
 	rw.easy_run(select_highest_degree)
 
