@@ -3,6 +3,7 @@ deserialize
 this file takes as input a json file and can return a treelib object
 '''
 import json
+from unicodedata import category
 from treelib import Tree
 import copy
 
@@ -67,14 +68,52 @@ class TreeLoader:
             trees.append(copy.deepcopy(tree))
         
         return trees
+
+    # takes a set of filenames opens them and counts
+    def count_comments(self, filenames):
+        d = {}
+        for filename in filenames:
+            num_comments = 0
+            trees = self.get_trees_from_json(filename)
+            for tree in trees:
+                num_comments += len(tree.all_nodes())
+            d[filename] = num_comments
+        return d
+
+    def count_trees(self, filenames):
+        d = {}
+        for filename in filenames:
+            trees = self.get_trees_from_json(filename)
+            d[filename] = len(trees)
+        return d
+
+
+    def get_filenames_bysubreddit(self,subbreddit_name,ending):
+        filenames = []
+        categories = ["top","controversial","both"]
+        for cat in categories:
+            filenames.append(subbreddit_name+"_{}.{}".format(cat,ending))
+        return filenames
+
+        
+
+
         
 
 if __name__ == "__main__":
     tree_loader = TreeLoader()
-    filename = "conspiracy.json"
-    trees = tree_loader.get_trees_from_json(filename)
+    subreddit_name = "Coronavirus"
+    filenames = tree_loader.get_filenames_bysubreddit(subreddit_name)
+    print(tree_loader.count_trees(filenames,"json"))
+    print(tree_loader.count_comments(filenames,"json"))
 
-    print(len(tree_loader.users))
+
+   
+        
+
+
+
+    # print(len(tree_loader.users))
 
 
 

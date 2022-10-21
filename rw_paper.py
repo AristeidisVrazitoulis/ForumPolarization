@@ -25,9 +25,14 @@ class RandomWalkSimulation:
 		self.n_experiments = n_experiments
 		# try metis
 		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
-		self.count_stats = [0 for i in range(4)]
-		self.p = [0 for i in range(4)]
-		self.map_functions = {True:self.getNodesFromLabelsWithHighestDegree, False:self.getRandomNodesFromLabels}
+		
+		print("gA",len(self.groupA))
+		# self.count_stats = [0 for i in range(4)]
+		# self.p = [0 for i in range(4)]
+
+		# to calculate the average step count
+		self.total_experiments = 0
+		self.total_steps = 0
 
 	# parameter k = number of random nodes to generate
 	def getRandomNodes(self, k):
@@ -40,10 +45,12 @@ class RandomWalkSimulation:
 
 	# parameter k = no. of random nodes to generate, flag could be "left", "right" or "both". If both, k/2 from one side and k/2 from the other side are generated.
 	def getRandomNodesFromLabels(self, k, group): 
-		random_nodes = []
-		for i in range(k):
-			random_num = random.randint(0,len(group)-1)
-			random_nodes.append(group[random_num])
+		random_nodes = group[:]
+		random.shuffle(random_nodes)
+		random_nodes = random_nodes[:k]
+		# for i in range(k):
+		# 	random_num = random.randint(0,len(group)-1)
+		# 	random_nodes.append(group[random_num])
 		
 		random_nodes_map = {elem : 1 for elem in random_nodes}
 		return random_nodes_map
@@ -64,11 +71,10 @@ class RandomWalkSimulation:
 				continue
 			random_nodes[node[0]] = node[1]
 			count += 1
-
 		return random_nodes
 
 	# returns if we ended up in a "left" node or a "right" node
-	def performRandomWalk(self, starting_node,user_nodes_side1,user_nodes_side2): 
+	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2): 
 		# contains unique nodes seen till now
 		dict_nodes = {} 
 		
@@ -88,7 +94,10 @@ class RandomWalkSimulation:
 			if starting_node in user_nodes_side2:
 				side = "right"
 				break
+			if step_count > len(self.G.nodes)*2:break
 
+		self.total_experiments += 1
+		self.total_steps += step_count		
 		return side
 
 	# returns the number of steps taken before reaching *ALL* node from the set of user nodes. difference from the above method is that we should reach all nodes, instead of just any one of them.
@@ -126,12 +135,12 @@ class RandomWalkSimulation:
 
 		user_nodes_list = list(user_nodes1.keys())
 		for i in range(len(user_nodes_list)-1):
-			node = user_nodes_list[i]
+			starting_node = user_nodes_list[i]
 			other_nodes = user_nodes_list[:i] + user_nodes_list[i+1:]
 			other_nodes_dict = {node:1 for node in other_nodes}
 			if is_left:
-				side = self.performRandomWalk(node,other_nodes_dict,user_nodes2)
-			else: side = self.performRandomWalk(node,user_nodes2, other_nodes_dict)
+				side = self.performRandomWalk(starting_node, other_nodes_dict, user_nodes2)
+			else: side = self.performRandomWalk(starting_node, user_nodes2, other_nodes_dict)
 
 			if side=="left":
 				endup_left += 1
@@ -142,11 +151,12 @@ class RandomWalkSimulation:
 
 	# starts and performs the whole random walk algorithm and returns the stats for each case
 	# The variables direction1_direction2 count the times that we performed rw starting from destination1 and ended up on destination2
-	def perform_random_walk_experiments(self, choose_highest_degree=True):
-		self.is_highest_degree = choose_highest_degree
+	def perform_random_walk_experiments(self, rw_type='rr'):
+		self.is_highest_degree = rw_type
+		count_stats = [0 for i in range(4)]
+
 		left = list(self.groupA)
 		dict_left = {node_name:1 for node_name in left}
-
 		right = list(self.groupB)
 		dict_right = {node_name:1 for node_name in right}
 
@@ -157,29 +167,40 @@ class RandomWalkSimulation:
 		left_percent = int(self.sample_percent*len(dict_left.keys()))
 		right_percent = int(self.sample_percent*len(dict_right.keys()))
 
+		if rw_type=='pp':
+			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(10, left)
+			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(10, right)
+
 		for i in range(self.n_experiments):
 
-			user_nodes_left = self.map_functions[choose_highest_degree](left_percent, left)
-			user_nodes_right = self.map_functions[choose_highest_degree](right_percent, right)
+			if rw_type == 'rr':
+				user_nodes_left = self.getRandomNodesFromLabels(left_percent, left)
+				user_nodes_right = self.getRandomNodesFromLabels(right_percent, right)
+			
+			# print("in loop",len(user_nodes_left))
 
 			# print "randomly selected user nodes ", user_nodes
 			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_left, user_nodes_right)
-			self.count_stats[LEFT_LEFT] += endup_left
-			self.count_stats[LEFT_RIGHT] += endup_right
+			count_stats[LEFT_LEFT] += endup_left
+			count_stats[LEFT_RIGHT] += endup_right
 
 			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_right, user_nodes_left, False)
-			self.count_stats[RIGHT_LEFT] += endup_left
-			self.count_stats[RIGHT_RIGHT] += endup_right
+			count_stats[RIGHT_LEFT] += endup_left
+			count_stats[RIGHT_RIGHT] += endup_right
 				
 			print("experiment:", i)
 		
+		return count_stats
+
 
 	# fills the array p of probabilities
-	def compute_probabilities_by_stats(self):
-		self.p[0] = round(self.count_stats[LEFT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT]),4)
-		self.p[1] = round(self.count_stats[LEFT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT]),4)
-		self.p[2] = round(self.count_stats[RIGHT_LEFT]*1.0/(self.count_stats[LEFT_LEFT]+self.count_stats[RIGHT_LEFT]),4)
-		self.p[3] = round(self.count_stats[RIGHT_RIGHT]*1.0/(self.count_stats[LEFT_RIGHT]+self.count_stats[RIGHT_RIGHT]),4)
+	def compute_probabilities_by_stats(self, count_stats):
+		p = [0 for i in range(4)]
+		p[0] = round(count_stats[LEFT_LEFT]*1.0/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),4)
+		p[1] = round(count_stats[LEFT_RIGHT]*1.0/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT]),4)
+		p[2] = round(count_stats[RIGHT_LEFT]*1.0/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),4)
+		p[3] = round(count_stats[RIGHT_RIGHT]*1.0/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT]),4)
+		return p
 
 
 	# takes as an input vector p of length 4
@@ -191,31 +212,30 @@ class RandomWalkSimulation:
 		p_yy = p[3]
 		return p_xx*p_yy - p_xy*p_yx
 
+	def __get_avg_countstep(self):
+		return self.total_steps/self.total_experiments
 
-	def easy_run(self, highest_degree=True):
-		self.perform_random_walk_experiments(highest_degree)
-		self.compute_probabilities_by_stats()
-		self.polarity = self.compute_polarity(self.p)
-		self.print_all_stats()
-		print("polarity:",self.polarity)
+	def easy_run(self, rw_type='rr'):
+		count_stats = self.perform_random_walk_experiments(rw_type)
+		p = self.compute_probabilities_by_stats(count_stats)
+		polarity = self.compute_polarity(p)
+		self.print_all_stats(p, count_stats)
+		print("polarity:",polarity)
 
-	def print_all_stats(self):
+
+	def print_all_stats(self, p, count_stats):
 		print("--------------------------------------")
-		print("left -> left", self.count_stats[LEFT_LEFT], "p_xx =",self.p[0])
-		print("left -> right", self.count_stats[LEFT_RIGHT], "p_xy =",self.p[1])
-		print("right -> right", self.count_stats[RIGHT_LEFT], "p_yx =",self.p[2])
-		print("right -> left", self.count_stats[RIGHT_RIGHT], "p_yy =",self.p[3])
+		print("Average step count per experiment", self.__get_avg_countstep())
+		print("left -> left", count_stats[LEFT_LEFT], "p_xx =", p[0])
+		print("left -> right", count_stats[LEFT_RIGHT], "p_xy =", p[1])
+		print("right -> right", count_stats[RIGHT_LEFT], "p_yx =", p[2])
+		print("right -> left", count_stats[RIGHT_RIGHT], "p_yy =", p[3])
 	
 	# saves stats to file
-	def save_stats(self, graph_filename):
-		data_line = "{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
+	def save_stats(self, graph_filename, polarity):
+		data_line = "{},{},{},{},{}\n".format(
 			graph_filename,self.n_experiments,self.sample_percent,
-			self.count_stats[LEFT_LEFT],
-			self.count_stats[LEFT_RIGHT],
-			self.count_stats[RIGHT_LEFT],
-			self.count_stats[RIGHT_RIGHT],
-			self.p[0],self.p[1],self.p[2],self.p[3],
-			self.polarity,
+			polarity,
 			self.is_highest_degree
 			)
 		with open("statistics/rw_stats.csv","a") as f:
@@ -230,14 +250,16 @@ class RandomWalkSimulation:
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "merged.txt"
+	filename = "Coronavirus_top.txt"
 	G = manager.import_graph(filename)
-	sample_percent = 1
-	n_experiments = 50
-	select_highest_degree = True
+	
+	sample_percent = 0.1
+	n_experiments = 1000
+	rw_type = 'rr'
 	save_stat = False
+
 	rw = RandomWalkSimulation(G, sample_percent, n_experiments)
-	rw.easy_run(select_highest_degree)
+	rw.easy_run(rw_type)
 
 	if save_stat:
 		rw.save_stats(filename)

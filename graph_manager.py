@@ -11,28 +11,27 @@ import time
 
 class GraphManager:
 
-    def __init__(self):
-        try:
-            self.perspective = PerspectiveAPI()
-        except ServerNotFoundError:
-            print("No wifi")
-        self.c = 0
-
     # takes as input a comment and the answer of the comment
     # and determines the sign of the edge
-    def determine_edge_sign(self, child, parent):
+    def determine_edge_sign(self, child, parent, perspective):
         edge_sign = child.data["score"]*parent.data["score"]
         # assign edge sign
-        
         if child.data["score"] < 0 and parent.data["score"] < 0:
-            if self.perspective.is_prob_insult(child.data["body"]):
+            if perspective.is_prob_insult(child.data["body"]):
                 print(child.data["body"])
                 print("-------------")
                 edge_sign = -1
+            # limit of 1 request per second
             time.sleep(1.05)
             
-    
         return edge_sign
+
+    def get_perspective_api(self):
+        try:
+            return PerspectiveAPI()
+        except ServerNotFoundError:
+            print("No wifi")
+            return None
         
 
     def aggregate_graphs(self, graphs):
@@ -42,7 +41,9 @@ class GraphManager:
     # returns a multigraph
     def create_multigraph(self, reply_tree):
         ucg = nx.MultiDiGraph()
-        
+        perspective = self.get_perspective_api()
+        if perspective is None:return
+
         for comment_node in reply_tree.all_nodes_itr():
             nid = comment_node.identifier
             child = reply_tree.get_node(nid)
@@ -52,7 +53,7 @@ class GraphManager:
             parent = reply_tree.parent(nid)
             if parent is None: continue
             
-            edge_sign = self.determine_edge_sign(child, parent)
+            edge_sign = self.determine_edge_sign(child, parent, perspective)
             # make a directed edge child -> parent
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
         return ucg
@@ -84,36 +85,49 @@ class GraphManager:
         filepath = "graph_data/{}".format(filename)
         return nx.read_edgelist(filepath)
 
+    def combine_graphs_from_file(self, filename1, filename2):
+        graph1 = self.import_graph(filename1)
+        graph2 = self.import_graph(filename2)
+        # tups = community.kernighan_lin_bisection(graph1)
+        setA = set(graph1.nodes)
+        setB = set(graph2.nodes)
+        setC = setA.intersection(setB)
+        print(len(setC))
 
+        merged = self.merge_graphs([graph1, graph2])
+
+        self.export_graph(merged, "{}_{}.txt".format(filename1, filename2))
+
+
+    def print_graph_stats(self, subr):
+        tree_loader = TreeLoader()
+        filenames = tree_loader.get_filenames_bysubreddit(subr,"txt")
+        for filename in filenames:
+            g = manager.import_graph(filename)
+            print(filename)
+            print("#nodes:",len(g.nodes))
+            print("#edges:",len(g.edges))
+            print()
+    
     def draw_graph(self, ucg):
         nx.draw(ucg, node_size=30)
         plt.show()
+
         
 
 if __name__ == "__main__":
    
     manager = GraphManager()
-    # filename = "conspiracy.json"
-    # g = manager.get_unified_graph_from_file(filename)
-    # manager.export_graph(g,"conspiracy.txt")
+    # filename = "conspiracy_both.json"
+    subreddit = "conspiracy"
+    #manager.print_graph_stats(subreddit)
+    
 
 
-
-    # corona_graph = manager.import_graph("corona.txt")
-    # conspiracy_graph = manager.import_graph("conspiracy.txt")
-    #  # tups = community.kernighan_lin_bisection(corona_graph)
-    # setA = set(corona_graph.nodes)
-    # setB = set(conspiracy_graph.nodes)
-
-    # setC = setA.intersection(setB)
-    # print(setC)
-    # merged = manager.merge_graphs([corona_graph, conspiracy_graph])
-
-    # manager.export_graph(merged, "merged.txt")
 
     
-    graph = manager.import_graph("merged.txt")
+    # graph = manager.import_graph("merged.txt")
 
-    print(len(graph.nodes))
-    print(len(graph.edges))
+    # print(len(graph.nodes))
+    # print(len(graph.edges))
     

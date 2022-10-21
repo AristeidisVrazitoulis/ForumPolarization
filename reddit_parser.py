@@ -33,6 +33,7 @@ class RedditParser():
         
     # takes a submissin id from a reddit post and returns a treelib object    
     def create_tree(self, submission_id):
+        
         submission = self.reddit.submission(submission_id)
         submission.comments.replace_more()
         tree = Tree()
@@ -50,6 +51,13 @@ class RedditParser():
                 data = {"body":comment.body, "score":comment.score}
             )
         return tree
+
+    # takes a list of ids andd returns a set of trees (of comments) of treelib object
+    def get_trees_by_id(self, ids):
+        trees = set()
+        for id in ids:
+            trees.add(self.create_tree(id))
+        return trees
 
 
     # extracts top submissions of a subreddit
@@ -78,14 +86,7 @@ class RedditParser():
                     break
         return submission_ids
 
-    # takes a list of ids andd returns a set of trees (of comments) of treelib object
-    def get_trees_by_id(self, ids):
-        trees = set()
-        for id in ids:
-            trees.add(self.create_tree(id))
-        return trees
-
-            
+      
     # puts all trees in a dictionary
     def create_merged_json(self, trees):
         json_obj = {}
@@ -123,17 +124,15 @@ class RedditParser():
         json_dict = self.create_merged_json(trees)
         return json_dict
     
-    # takes a subreddit name and returns 3 
+    # takes a subreddit name and returns 1 list of (3) lists of the ids
     def get_all_json_trees(self, subreddit_name, limit):
-        
         json_trees = []
         sub = self.reddit.subreddit(subreddit_name)
-        
-        all_subs = self.get_all_submissions(sub,limit)
+        # we get a list in the form of [[],[],[]]
+        post_id_lists = self.get_all_submissions(sub,limit)
 
-        for sub_list in all_subs:
-            for post_ids in sub_list:
-                json_trees.append(self.get_json_trees_by_postids(post_ids))
+        for postid_list in post_id_lists:
+            json_trees.append(self.get_json_trees_by_postids(postid_list))
         return json_trees
 
     
