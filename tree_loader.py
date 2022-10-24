@@ -5,6 +5,7 @@ this file takes as input a json file and can return a treelib object
 import json
 from unicodedata import category
 from treelib import Tree
+from utils.get_filenames import get_filenames_bysubreddit
 import copy
 
 class TreeLoader:
@@ -88,13 +89,6 @@ class TreeLoader:
         return d
 
 
-    def get_filenames_bysubreddit(self,subbreddit_name,ending):
-        filenames = []
-        categories = ["top","controversial","both"]
-        for cat in categories:
-            filenames.append(subbreddit_name+"_{}.{}".format(cat,ending))
-        return filenames
-
         
 
 
@@ -102,10 +96,10 @@ class TreeLoader:
 
 if __name__ == "__main__":
     tree_loader = TreeLoader()
-    subreddit_name = "Coronavirus"
-    filenames = tree_loader.get_filenames_bysubreddit(subreddit_name)
-    print(tree_loader.count_trees(filenames,"json"))
-    print(tree_loader.count_comments(filenames,"json"))
+    subreddit_name = "science"
+    filenames = get_filenames_bysubreddit(subreddit_name,"json")
+    print(tree_loader.count_trees(filenames))
+    print(tree_loader.count_comments(filenames))
 
 
    

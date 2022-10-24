@@ -3,7 +3,7 @@ from perspective import PerspectiveAPI
 import networkx as nx
 from utils.post_id import *
 import networkx as nx
-import matplotlib.pyplot as plt
+from utils.get_filenames import get_filenames_bysubreddit
 from tree_loader import TreeLoader
 
 import time
@@ -100,18 +100,21 @@ class GraphManager:
 
 
     def print_graph_stats(self, subr):
-        tree_loader = TreeLoader()
-        filenames = tree_loader.get_filenames_bysubreddit(subr,"txt")
+        filenames = get_filenames_bysubreddit(subr,"txt")
         for filename in filenames:
             g = manager.import_graph(filename)
             print(filename)
             print("#nodes:",len(g.nodes))
             print("#edges:",len(g.edges))
             print()
-    
-    def draw_graph(self, ucg):
-        nx.draw(ucg, node_size=30)
-        plt.show()
+
+    # loads trees from disk and saves an nx graph to disk
+    def load_trees_save_to_disk(self, subreddit_name):
+        filenames = get_filenames_bysubreddit(subreddit_name, "json")
+        for filename in filenames:
+            print(filename)
+            g = self.get_unified_graph_from_file(filename)
+            self.export_graph(g, filename.split(".")[0]+".txt")
 
         
 
@@ -119,8 +122,11 @@ if __name__ == "__main__":
    
     manager = GraphManager()
     # filename = "conspiracy_both.json"
-    subreddit = "conspiracy"
-    #manager.print_graph_stats(subreddit)
+
+    subreddit = "science"
+
+    manager.load_trees_save_to_disk(subreddit)
+    manager.print_graph_stats(subreddit)
     
 
 
