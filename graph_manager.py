@@ -123,7 +123,7 @@ if __name__ == "__main__":
     manager = GraphManager()
     # filename = "conspiracy_both.json"
 
-    subreddit = "science"
+    subreddit = "DebateVaccines"
 
     manager.load_trees_save_to_disk(subreddit)
     manager.print_graph_stats(subreddit)

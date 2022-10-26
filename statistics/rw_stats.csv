@@ -35,3 +35,11 @@ science_controversial.txt,1000,0.1,0.2562,pp,42.4736
 science_controversial.txt,10000,0.1,0.5615,pp,28.9856
 science_top.txt,10000,0.1,0.0489,pp,91.9992
 science_top.txt,1000,0.1,0.4361,rr,24.7339
+DebateVaccines_top.txt,1000,0.1,0.2573,rr,19.2759
+DebateVaccines_top.txt,1000,0.1,0.2328,pp,10.0881
+DebateVaccines_top.txt,1000,0.1,0.2018,pp,10.314
+DebateVaccines_controversial.txt,1000,0.1,0.2734,rr,19.0706
+DebateVaccines_controversial.txt,1000,0.1,0.1475,pp,7.8578
+DebateVaccines_controversial.txt,1000,0.1,0.0975,pp,9.497
+DebateVaccines_both.txt,1000,0.1,0.2765,rr,17.9259
+DebateVaccines_both.txt,1000,0.1,-0.0323,pp,10.8287

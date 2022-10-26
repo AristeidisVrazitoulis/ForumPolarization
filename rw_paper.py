@@ -67,7 +67,7 @@ class RandomWalkSimulation:
 
 	
 	# returns if we ended up in a "left" node or a "right" node
-	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2, walk_limit=-1): 
+	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2, walk_limit): 
 		# contains unique nodes seen till now
 		dict_nodes = {} 
 		
@@ -87,7 +87,7 @@ class RandomWalkSimulation:
 			if starting_node in user_nodes_side2 and walk_limit == -1:
 				side = "right"
 				break
-			
+			# variation of the algorithm
 			if step_count == walk_limit:
 				if starting_node in self.groupA:
 					side = "left"
@@ -203,12 +203,15 @@ class RandomWalkSimulation:
 
 	# fills the array p of probabilities
 	def compute_probabilities_by_stats(self, count_stats):
-		print(count_stats)
-		p = [
-		count_stats[LEFT_LEFT]/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),
-		count_stats[LEFT_RIGHT]/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT]),
-		count_stats[RIGHT_LEFT]/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),
-		count_stats[RIGHT_RIGHT]/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT])]
+		try:
+			p = [
+			count_stats[LEFT_LEFT]/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),
+			count_stats[LEFT_RIGHT]/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT]),
+			count_stats[RIGHT_LEFT]/(count_stats[LEFT_LEFT]+count_stats[RIGHT_LEFT]),
+			count_stats[RIGHT_RIGHT]/(count_stats[LEFT_RIGHT]+count_stats[RIGHT_RIGHT])]
+		except ZeroDivisionError:
+			print("Zero Division")
+			print(count_stats)
 		return p
 
 
@@ -263,14 +266,14 @@ class RandomWalkSimulation:
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "conspiracy_controversial.txt"
+	filename = "DebateVaccines_both.txt"
 	G = manager.import_graph(filename)
 	
 	sample_percent = 0.1
 	n_experiments = 1000
 	# can take either 'rr' 'pp' 'rp' ('rp' not implemented)
-	rw_type = 'rr'
-	save_stat = False
+	rw_type = 'pp'
+	save_stat = True
 
 	rw = RandomWalkSimulation(G)
 	polarity = rw.easy_run(sample_percent, n_experiments, rw_type)

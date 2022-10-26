@@ -149,7 +149,7 @@ if __name__ == "__main__":
     credentials = 'client_secrets.json'
     save_to_file = True
     limit = 10
-    subreddit_name = "science"
+    subreddit_name = "DebateVaccines"
 
 
     reddit_parser = RedditParser(credentials)

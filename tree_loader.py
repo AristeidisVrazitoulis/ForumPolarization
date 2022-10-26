@@ -96,7 +96,7 @@ class TreeLoader:
 
 if __name__ == "__main__":
     tree_loader = TreeLoader()
-    subreddit_name = "science"
+    subreddit_name = "DebateVaccines"
     filenames = get_filenames_bysubreddit(subreddit_name,"json")
     print(tree_loader.count_trees(filenames))
     print(tree_loader.count_comments(filenames))
