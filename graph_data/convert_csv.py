@@ -2,8 +2,8 @@
 Converts edge list to csv file for the gephi software
 '''
 
-theme = "merged"
-filename = "merged_graph.txt"
+theme = "vaxx"
+filename = f"{theme}_undirected.txt"
 
 first_line = "Source Target\n"
 final_content = ""

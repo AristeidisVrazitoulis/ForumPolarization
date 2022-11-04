@@ -31,7 +31,6 @@ class TreeLoader:
     def load_tree(self, json_tree, parent=None):
         # deserializes json object and returns a treelib object
         node_name,_ = list(json_tree.items())[0]
-        self.users.add(node_name)
         # if it is a leaf
         if "children" not in json_tree[node_name]:
             return self.tree
@@ -89,14 +88,10 @@ class TreeLoader:
         return d
 
 
-        
-
-
-        
 
 if __name__ == "__main__":
     tree_loader = TreeLoader()
-    subreddit_name = "DebateVaccines"
+    subreddit_name = "Coronavirus"
     filenames = get_filenames_bysubreddit(subreddit_name,"json")
     print(tree_loader.count_trees(filenames))
     print(tree_loader.count_comments(filenames))

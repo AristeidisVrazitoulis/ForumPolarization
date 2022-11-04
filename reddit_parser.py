@@ -4,6 +4,7 @@ This file takes as an input a post id from reddit and saves the tree as json to 
 import json
 import praw
 from treelib import Tree
+# from utils.get_filenames import get_filenames_bysubreddit
 
 class RedditParser():
     
@@ -22,8 +23,7 @@ class RedditParser():
         
         self.delete_ids = set()
         self.categories = ["top","controversial", "both"]
-
-
+       
 
     def write_json_to_file(self, filename, json_str):
         folder = r"tree_data/"
@@ -67,7 +67,6 @@ class RedditParser():
         for sub in submissions:
             submission_ids.append(sub.id)
         
-        print(len(list(submission_ids)))
         return submission_ids
 
 
@@ -99,6 +98,9 @@ class RedditParser():
 
     # takes subreddit and returns the set of post we define(category)
     def get_all_submissions(self, sub, limit, category="all"):
+        if category == "flair":
+            pass
+            
         if category != "controversial":
             top_posts = self.extract_top_submissions(sub, limit)
         if category != "top":
@@ -117,7 +119,7 @@ class RedditParser():
             return None
 
     # takes a set of IDs and returns a corresponding json object
-    def get_json_trees_by_postids(self, post_ids):
+    def get_json_by_postids(self, post_ids):
         # a list of treelib objects
         trees = self.get_trees_by_id(post_ids)
         # makes a json dictionary with those trees
@@ -128,11 +130,12 @@ class RedditParser():
     def get_all_json_trees(self, subreddit_name, limit):
         json_trees = []
         sub = self.reddit.subreddit(subreddit_name)
-        # we get a list in the form of [[],[],[]]
+        # we get a list in the form of [[top],[contr],[both]]
         post_id_lists = self.get_all_submissions(sub,limit)
 
-        for postid_list in post_id_lists:
-            json_trees.append(self.get_json_trees_by_postids(postid_list))
+        for post_id_list in post_id_lists:
+            json_trees.append(self.get_json_by_postids(post_id_list))
+
         return json_trees
 
     
@@ -147,25 +150,33 @@ class RedditParser():
 if __name__ == "__main__":
     #settings
     credentials = 'client_secrets.json'
-    save_to_file = True
-    limit = 10
+    save_to_file = False
+    limit = 100
     subreddit_name = "DebateVaccines"
 
 
     reddit_parser = RedditParser(credentials)
     reddit = reddit_parser.reddit
 
-    json_trees = reddit_parser.get_all_json_trees(subreddit_name, limit)
-    if save_to_file:
-        reddit_parser.save_trees_json_todisk(json_trees)
-
-    #conspiracy_json = reddit_parser.get_json_trees_by_subreddit("conspiracy", 10)
+    sub = reddit.subreddit(subreddit_name)
+    submissions = sub.search("vaccin", sort="top", time_filter="all", limit=None)
+    s = 0
+    for c in submissions:
+        s += 1
+    print(s)
     
-   
+    # subs = reddit_parser.extract_controversial_submissions(sub, 1000)
+    # print(len(subs))
 
 
-  
+    # json_trees = reddit_parser.get_all_json_trees(subreddit_name, limit)
+    # if save_to_file:
+    #     reddit_parser.save_trees_json_todisk(json_trees)
 
-    # ids = ["xkti8v", "xdn27t"]
+    
+
+    
+ 
+
     
    

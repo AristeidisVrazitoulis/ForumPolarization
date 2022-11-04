@@ -1,6 +1,6 @@
 
 
-
+subreddit_names = ["Coronavirus","conspiracy","vaxxhappened","science","DebateVaccines"]
 categories = ["top","controversial","both"]
 
 def get_filenames_bysubreddit(subbreddit_name,ending):

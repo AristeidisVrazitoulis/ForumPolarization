@@ -1,3 +1,10 @@
+'''
+Format:
+1 JSON file has multiple trees
+For each JSON file we make a graph for each tree and then merge all those graphs
+'''
+
+
 from httplib2 import ServerNotFoundError
 from perspective import PerspectiveAPI
 import networkx as nx
@@ -7,6 +14,10 @@ from utils.get_filenames import get_filenames_bysubreddit
 from tree_loader import TreeLoader
 
 import time
+from utils import get_filenames
+
+
+
 
 
 class GraphManager:
@@ -53,7 +64,9 @@ class GraphManager:
             parent = reply_tree.parent(nid)
             if parent is None: continue
             
-            edge_sign = self.determine_edge_sign(child, parent, perspective)
+            # edge_sign = self.determine_edge_sign(child, parent, perspective)
+            edge_sign = 1
+
             # make a directed edge child -> parent
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
         return ucg
@@ -98,15 +111,22 @@ class GraphManager:
 
         self.export_graph(merged, "{}_{}.txt".format(filename1, filename2))
 
+    def print_single_graph(self, graph):
+        print(graph, "denstity:", round(nx.density(graph),4))
 
     def print_graph_stats(self, subr):
         filenames = get_filenames_bysubreddit(subr,"txt")
         for filename in filenames:
             g = manager.import_graph(filename)
-            print(filename)
-            print("#nodes:",len(g.nodes))
-            print("#edges:",len(g.edges))
+            self.print_single_graph(g)
             print()
+
+    def get_largest_connected_graph(self, graph):
+        components = nx.weakly_connected_components(graph)
+        largest_cc = list(max(components, key=len))
+        return graph.subgraph(largest_cc)
+            
+
 
     # loads trees from disk and saves an nx graph to disk
     def load_trees_save_to_disk(self, subreddit_name):
@@ -114,7 +134,31 @@ class GraphManager:
         for filename in filenames:
             print(filename)
             g = self.get_unified_graph_from_file(filename)
+            self.print_single_graph(g)
+            if not nx.is_weakly_connected(g):
+                print("graph is not connected")
+                g = self.get_largest_connected_graph(g)
+                self.print_single_graph(g)
+
+
             self.export_graph(g, filename.split(".")[0]+".txt")
+
+    # # takes all graphs and saves the largest cc from the 
+    # def take_largest_cc(self):
+    #     for subreddit in get_filenames.subreddit_names:
+    #         for cat in get_filenames.categories:
+    #             filename = f"{subreddit}_{cat}.txt"
+    #             G = self.import_graph(filename)
+    #             G = nx.Graph(G)
+    #             print(filename)
+    #             self.print_single_graph(G)
+    #             if not nx.is_connected(G):
+    #                 largest_connected = self.get_largest_connected_graph(G)
+    #                 print("graph is not connected")
+    #                 self.print_single_graph(largest_connected)
+    #                 self.export_graph(largest_connected, filename)
+    #                 print()
+    #             print()
 
         
 
@@ -123,17 +167,11 @@ if __name__ == "__main__":
     manager = GraphManager()
     # filename = "conspiracy_both.json"
 
-    subreddit = "DebateVaccines"
+    subreddit = "Coronavirus"
 
     manager.load_trees_save_to_disk(subreddit)
-    manager.print_graph_stats(subreddit)
-    
-
-
+    # manager.print_graph_stats(subreddit)
 
     
-    # graph = manager.import_graph("merged.txt")
 
-    # print(len(graph.nodes))
-    # print(len(graph.edges))
     

@@ -7,8 +7,14 @@
 
 import random,sys
 from operator import itemgetter
+
+from matplotlib.pyplot import get
 from graph_manager import GraphManager
 from networkx.algorithms import community
+
+
+import networkx as nx
+# from utils.get_filenames import get_filenames_bysubreddit
 
 # constants of the array that saves the stats of the experiment
 LEFT_LEFT = 0
@@ -176,8 +182,8 @@ class RandomWalkSimulation:
 		right_percent = int(sample_percent*len(dict_right.keys()))
 
 		if rw_type=='pp':
-			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(10, left)
-			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(10, right)
+			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(self.k_pop, left)
+			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(self.k_pop, right)
 
 		for i in range(n_experiments):
 			if rw_type == 'rr':
@@ -268,7 +274,10 @@ if __name__ == "__main__":
 	manager = GraphManager()
 	filename = "DebateVaccines_both.txt"
 	G = manager.import_graph(filename)
-	
+	# manager.print_single_graph(G)
+
+
+
 	sample_percent = 0.1
 	n_experiments = 1000
 	# can take either 'rr' 'pp' 'rp' ('rp' not implemented)
@@ -276,6 +285,7 @@ if __name__ == "__main__":
 	save_stat = True
 
 	rw = RandomWalkSimulation(G)
+	rw.k_pop = 10
 	polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
 
 	if save_stat:
