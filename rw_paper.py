@@ -24,17 +24,28 @@ RIGHT_RIGHT = 3
 
 class RandomWalkSimulation:
 	
-	def __init__(self, graph):
+	def __init__(self, graph, groupA, groupB):
 		# NetworkX Graph
 		self.G = graph
+		# the graph is saved in a dict for faster processing
 		self.G_dict = {node: list(G[node]) for node in G}
 		# try metis
-		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
-		
+		self.groupA = groupA
+		self.groupB = groupB
 
 		# to calculate the average step count
 		self.total_experiments = 0
 		self.total_steps = 0
+
+
+		self.count_ends = {}
+
+	def sort_graph(self):
+		dict_degrees = { node : self.G.degree(node) for node in self.G.nodes() }
+		# sorts nodes by degrees
+		self.sorted_dict = sorted(dict_degrees.items(), key=itemgetter(1), reverse=True) 
+		# print(self.sorted_dict)
+
 
 	# parameter k = number of random nodes to generate
 	def getRandomNodes(self, k):
@@ -56,24 +67,22 @@ class RandomWalkSimulation:
 	# first take the nodes with the highest degree according to the "flag" and then take the top k
 	def getNodesFromLabelsWithHighestDegree(self, k, group_dict): 
 		random_nodes = {}
-		dict_degrees = { node : self.G.degree(node) for node in self.G.nodes() }
-
-		# sorts nodes by degrees
-		sorted_dict = sorted(dict_degrees.items(), key=itemgetter(1), reverse=True) 
 		
 		count = 0
-		for node in sorted_dict:
+
+		for node in self.sorted_dict:
 			if count>k:
 				break
 			if not node[0] in group_dict:
 				continue
 			random_nodes[node[0]] = node[1]
 			count += 1
+		
 		return random_nodes
 
 	
 	# returns if we ended up in a "left" node or a "right" node
-	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2, walk_limit): 
+	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2): 
 		# contains unique nodes seen till now
 		dict_nodes = {} 
 		
@@ -83,25 +92,24 @@ class RandomWalkSimulation:
 		while(True):
 			# print "starting from ", starting_node, "num nodes visited ", len(dict_nodes.keys()), " out of ", len(nodes)
 			neighbors = self.G_dict[starting_node]
+			if len(neighbors) == 0: return
 			random_num = random.randint(0, len(neighbors)-1)
 			starting_node = neighbors[random_num]
 			dict_nodes[starting_node] = 1
 			step_count += 1
-			if starting_node in user_nodes_side1 and walk_limit == -1:
+			if starting_node in user_nodes_side1:
+				if starting_node in self.count_ends: self.count_ends[starting_node] += 1
+				else: self.count_ends[starting_node] = 1
+
 				side = "left"
 				break
-			if starting_node in user_nodes_side2 and walk_limit == -1:
+			if starting_node in user_nodes_side2:
+				if starting_node in self.count_ends: self.count_ends[starting_node] += 1
+				else: self.count_ends[starting_node] = 1
+
 				side = "right"
 				break
-			# variation of the algorithm
-			if step_count == walk_limit:
-				if starting_node in self.groupA:
-					side = "left"
-					break
-				elif starting_node in self.groupB:
-					side = "right"
-					break
-				else:print("sth went wrong")
+			
 
 			if step_count > len(self.G.nodes)*2:break
 
@@ -139,7 +147,7 @@ class RandomWalkSimulation:
 	
 	
 
-	def perform_single_random_walk_experiment(self, user_nodes1, user_nodes2, is_left=True):
+	def perform_single_random_walk_experiment(self, user_nodes1, user_nodes2, is_left, rw_type):
 		endup_left = 0
 		endup_right = 0
 		# SETTING
@@ -148,13 +156,23 @@ class RandomWalkSimulation:
 		# print(walk_limit)
 
 		user_nodes_list = list(user_nodes1.keys())
-		for i in range(len(user_nodes_list)-1):
-			starting_node = user_nodes_list[i]
-			other_nodes = user_nodes_list[:i] + user_nodes_list[i+1:]
+		if rw_type == 'rp':
+			left_group = list(self.groupA)
+			right_group = list(self.groupB)
+			other_nodes = user_nodes_list
 			other_nodes_dict = {node:1 for node in other_nodes}
+		for i in range(len(user_nodes_list)-1):
+
+			if rw_type != 'rp':
+				starting_node = user_nodes_list[i]
+				other_nodes = user_nodes_list[:i] + user_nodes_list[i+1:]
+				other_nodes_dict = {node:1 for node in other_nodes}
+			else: 
+				starting_node = random.choice(left_group) if is_left else random.choice(right_group)
+		
 			if is_left:
-				side = self.performRandomWalk(starting_node, other_nodes_dict, user_nodes2, walk_limit)
-			else: side = self.performRandomWalk(starting_node, user_nodes2, other_nodes_dict, walk_limit)
+				side = self.performRandomWalk(starting_node, other_nodes_dict, user_nodes2)
+			else: side = self.performRandomWalk(starting_node, user_nodes2, other_nodes_dict)
 
 			if side=="left":
 				endup_left += 1
@@ -181,7 +199,8 @@ class RandomWalkSimulation:
 		left_percent = int(sample_percent*len(dict_left.keys()))
 		right_percent = int(sample_percent*len(dict_right.keys()))
 
-		if rw_type=='pp':
+		if rw_type in ('pp','rp'):
+			self.sort_graph()
 			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(self.k_pop, left)
 			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(self.k_pop, right)
 
@@ -189,21 +208,20 @@ class RandomWalkSimulation:
 			if rw_type == 'rr':
 				user_nodes_left = self.getRandomNodesFromLabels(left_percent, left)
 				user_nodes_right = self.getRandomNodesFromLabels(right_percent, right)
-
-			
 			# print("in loop",len(user_nodes_left))
 
 			# print "randomly selected user nodes ", user_nodes
-			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_left, user_nodes_right)
+			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_left, user_nodes_right, True, rw_type)
 			count_stats[LEFT_LEFT] += endup_left
 			count_stats[LEFT_RIGHT] += endup_right
 
-			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_right, user_nodes_left, False)
+			(endup_left, endup_right) = self.perform_single_random_walk_experiment(user_nodes_right, user_nodes_left, False, rw_type)
 			count_stats[RIGHT_LEFT] += endup_left
 			count_stats[RIGHT_RIGHT] += endup_right
 				
 			# print("experiment:", i)
-		
+		print()
+		# print(sorted(self.count_ends.items(), key=itemgetter(1), reverse=True) )
 		return count_stats
 
 
@@ -264,32 +282,40 @@ class RandomWalkSimulation:
 			f.write(data_line)
 
 
-# side = sys.argv[2] # left, right or both
-
-# G = nx.read_weighted_edgelist('news_news_matrix_largest_CC.txt',delimiter=',')
-# G = nx.read_weighted_edgelist('political_blogs_largest_CC.txt',delimiter=',')
-
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "DebateVaccines_both.txt"
+	filename = "personalfinance_top_wallstreetbets_top.txt"
 	G = manager.import_graph(filename)
+	groupA, groupB = manager.bisect_graph(G)
+	# groupA, groupB = list(groupA), list(groupB)
 	# manager.print_single_graph(G)
 
+	# ------
+	# G1 = manager.import_graph("personalfinance_controversial.txt")
+	# G2 = manager.import_graph("wallstreetbets_controversial.txt")
+	# nodes1 = set(G1.nodes)
+	# nodes2 = set(G2.nodes)
+	# print(len(nodes1.intersection(nodes2)))
+	# ------
+	
+	G = nx.Graph(G)
 
-
+	print(G)
+	
 	sample_percent = 0.1
 	n_experiments = 1000
-	# can take either 'rr' 'pp' 'rp' ('rp' not implemented)
-	rw_type = 'pp'
-	save_stat = True
+	# can take either 'rr' 'pp' 'rp' 
+	rw_type = 'rp'
+	save_stat = False
 
-	rw = RandomWalkSimulation(G)
+	rw = RandomWalkSimulation(G, groupA, groupB)
 	rw.k_pop = 10
 	polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
 
 	if save_stat:
 		rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)
+	
 
 
 

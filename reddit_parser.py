@@ -2,27 +2,19 @@
 This file takes as an input a post id from reddit and saves the tree as json to disk
 '''
 import json
-import praw
 from treelib import Tree
-# from utils.get_filenames import get_filenames_bysubreddit
+from utils.settings import get_filenames_bysubreddit,categories
+from extractor import Extractor
+import reddit_instance
 
 class RedditParser():
-    
-    def __init__(self, credentials):
-        self.credentials = credentials
-        with open(credentials) as f:
-            creds = json.load(f)
-            
-        # create reddit instance
-        self.reddit = praw.Reddit(client_id=creds['client_id'],
-                            client_secret=creds['client_secret'],
-                            user_agent=creds['user_agent'],
-                            redirect_uri=creds['redirect_uri'],
-                            refresh_token=creds['refresh_token'])
 
-        
-        self.delete_ids = set()
-        self.categories = ["top","controversial", "both"]
+    
+    def __init__(self, reddit):
+
+        self.reddit = reddit
+        self.categories = categories
+        # self.keyword = keyword
        
 
     def write_json_to_file(self, filename, json_str):
@@ -35,19 +27,23 @@ class RedditParser():
     def create_tree(self, submission_id):
         
         submission = self.reddit.submission(submission_id)
-        submission.comments.replace_more()
+        submission.comments.replace_more(limit=4)
         tree = Tree()
         # root node
-        tree.create_node(str(submission.author), str(submission.id), data={"score":submission.score,"body":submission.selftext}) 
+        tree.create_node(str(submission.author), str(submission.id), data={"score":submission.score,"body":submission.selftext, "submission_id":str(submission_id)}) 
         # traverse the tree
         for comment in submission.comments.list():
             comment_author = str(comment.author)
+            if comment_author == "AutoModerator":continue
             author_name = comment_author+str(comment.id) if comment_author == "None" else comment_author
 
+            parent_id = str(comment.parent_id[3:])
+            if not tree.contains(parent_id):continue
+
             tree.create_node(
-                author_name,
-                str(comment.id), 
-                parent=str(comment.parent_id[3:]),
+                author_name,    # tag
+                str(comment.id),# identifier 
+                parent=parent_id,
                 data = {"body":comment.body, "score":comment.score}
             )
         return tree
@@ -61,9 +57,9 @@ class RedditParser():
 
 
     # extracts top submissions of a subreddit
-    def extract_top_submissions(self, subreddit, limit):
+    def extract_top_submissions(self, subreddit, keyword, limit):
         submission_ids = []
-        submissions = subreddit.search("vaccin", sort="top", limit=limit)
+        submissions = subreddit.search(keyword, sort="top", limit=limit)
         for sub in submissions:
             submission_ids.append(sub.id)
         
@@ -71,13 +67,13 @@ class RedditParser():
 
 
     # extracts top submissions of a subreddit
-    def extract_controversial_submissions(self, subreddit, limit):
+    def extract_controversial_submissions(self, subreddit, keyword, limit):
         submission_ids = []
         submissions = subreddit.controversial(time_filter="all", limit = None)
        
         counter = 0
         for sub in submissions:
-            if "vaccin" in sub.selftext or "vaccin" in sub.title:
+            if keyword in sub.selftext or keyword in sub.title:
                 #print(sub.selftext)
                 submission_ids.append(sub.id)
                 counter += 1
@@ -88,18 +84,18 @@ class RedditParser():
       
     # puts all trees in a dictionary
     def create_merged_json(self, trees):
-        json_obj = {}
+        # json_obj = {}
+        ret_obj = {}
         for tree in trees:
             json_tree = json.loads(tree.to_json(with_data=True))
-            root_name = tree.get_node(tree.root).tag
-            json_obj[root_name] = json_tree[root_name]
+            root_name = tree.get_node(tree.root)
+            json_obj = {root_name.tag : json_tree[root_name.tag]}
+            ret_obj[root_name.identifier] = json_obj
 
-        return json_obj
+        return ret_obj
 
     # takes subreddit and returns the set of post we define(category)
     def get_all_submissions(self, sub, limit, category="all"):
-        if category == "flair":
-            pass
             
         if category != "controversial":
             top_posts = self.extract_top_submissions(sub, limit)
@@ -111,9 +107,9 @@ class RedditParser():
         elif category == "controversial":
             return [controversial_posts]
         elif category=="both":
-            return [top_posts,controversial_posts]
+            return [top_posts, controversial_posts]
         elif category == "all":
-            return [top_posts,controversial_posts, top_posts+controversial_posts]
+            return [top_posts, controversial_posts, top_posts+controversial_posts]
         else:
             print("category not found")
             return None
@@ -127,21 +123,48 @@ class RedditParser():
         return json_dict
     
     # takes a subreddit name and returns 1 list of (3) lists of the ids
-    def get_all_json_trees(self, subreddit_name, limit):
+    def get_all_json_trees(self, subreddit_name, keyword, limit):
         json_trees = []
         sub = self.reddit.subreddit(subreddit_name)
-        # we get a list in the form of [[top],[contr],[both]]
-        post_id_lists = self.get_all_submissions(sub,limit)
+        
 
-        for post_id_list in post_id_lists:
-            json_trees.append(self.get_json_by_postids(post_id_list))
+        top_posts = self.extract_top_submissions(sub, keyword, limit)
+        print(len(top_posts))
+        extractor = Extractor(self.reddit, top_posts)
+        top_trees = extractor.create_trees(top_posts)
+        print("top", self.count_comms(top_trees))
 
+        controversial_posts = self.extract_controversial_submissions(sub, keyword, limit)
+        controversial_trees = self.get_trees_by_id(controversial_posts)
+        print("contro", self.count_comms(controversial_trees))
+
+        all_trees = top_trees.union(controversial_trees)
+        if len(top_trees.intersection(controversial_trees)) != 0:
+            print("theres overlap between categories")
+        
+        json_trees.append(self.create_merged_json(top_trees))
+        json_trees.append(self.create_merged_json(controversial_trees))
+        json_trees.append(self.create_merged_json(all_trees))
+        
         return json_trees
+
+    def count_comms(self, trees):
+        s = 0
+        for t in trees:
+            s += len(t.all_nodes())
+        return s
 
     
     def save_trees_json_todisk(self, json_trees):
         for i in range(len(json_trees)):
             self.write_json_to_file("{}_{}.json".format(subreddit_name, self.categories[i]), json_trees[i])
+
+    def test1(self, subreddit_name, keyword, save_to_file):
+        json_trees = self.get_all_json_trees(subreddit_name, keyword, limit)
+
+        if save_to_file:
+            self.save_trees_json_todisk(json_trees)
+
 
 
 
@@ -149,30 +172,18 @@ class RedditParser():
 
 if __name__ == "__main__":
     #settings
-    credentials = 'client_secrets.json'
-    save_to_file = False
-    limit = 100
-    subreddit_name = "DebateVaccines"
-
-
-    reddit_parser = RedditParser(credentials)
-    reddit = reddit_parser.reddit
-
-    sub = reddit.subreddit(subreddit_name)
-    submissions = sub.search("vaccin", sort="top", time_filter="all", limit=None)
-    s = 0
-    for c in submissions:
-        s += 1
-    print(s)
     
-    # subs = reddit_parser.extract_controversial_submissions(sub, 1000)
-    # print(len(subs))
+    reddit = reddit_instance.get_reddit_instance()
+    save_to_file = True
+    limit = 1000
+    subreddit_name = "vaxxhappened"
+    keyword = "vaccin"
 
+    reddit_parser = RedditParser(reddit)
 
-    # json_trees = reddit_parser.get_all_json_trees(subreddit_name, limit)
-    # if save_to_file:
-    #     reddit_parser.save_trees_json_todisk(json_trees)
-
+    reddit_parser.test1(subreddit_name, keyword, save_to_file)
+    
+    
     
 
     

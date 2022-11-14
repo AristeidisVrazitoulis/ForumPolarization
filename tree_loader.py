@@ -3,9 +3,8 @@ deserialize
 this file takes as input a json file and can return a treelib object
 '''
 import json
-from unicodedata import category
 from treelib import Tree
-from utils.get_filenames import get_filenames_bysubreddit
+from utils.settings import get_filenames_bysubreddit
 import copy
 
 class TreeLoader:
@@ -15,6 +14,7 @@ class TreeLoader:
         # id of the node
         self.id = 0
         self.users = set()
+        self.counter = 0
 
     def initialize_tree(self):
         self.tree = Tree()
@@ -28,9 +28,12 @@ class TreeLoader:
         return tree_data
 
     # returns a treelib object by taking as an input a json object
-    def load_tree(self, json_tree, parent=None):
+    def load_tree1(self, json_tree, parent=None):
+
+        self.counter+=1
         # deserializes json object and returns a treelib object
         node_name,_ = list(json_tree.items())[0]
+
         # if it is a leaf
         if "children" not in json_tree[node_name]:
             return self.tree
@@ -51,21 +54,42 @@ class TreeLoader:
                 parent=parent, 
                 data={"body":child_data["body"],"score":child_data["score"]}
             )
-            self.load_tree(json_tree[node_name]['children'][counter], parent)
+            self.load_tree1(json_tree[node_name]['children'][counter], parent)
             
         return self.tree
+
+    def load_tree(self, json_tree, depth=0, parent=None):
+        k, value = list(json_tree.items())[0]
+        # print(k)
+        if parent is None:
+            self.tree.create_node(tag=str(k), identifier=str(k)+str(depth))
+            parent = self.tree.get_node(str(k)+str(depth))
+
+        if not 'children' in json_tree[k]:
+            return
+        for counter,value in enumerate(json_tree[k]['children']):    
+            if isinstance(json_tree[k]['children'][counter], str):
+                self.tree.create_node(tag=value, identifier=value+str(depth), parent=parent)
+            else:
+                self.tree.create_node(tag=list(value)[0], identifier=list(value)[0]+str(depth), parent=parent)
+                self.load_tree(json_tree[k]['children'][counter], depth+1, self.tree.get_node(list(value)[0]+str(depth)) )
     
 
     # returns a list of treelib objects by reading json file
     def get_trees_from_json(self, filename):
         trees = []
         tree_json = self.load_file(filename)
+
         for tree_item in tree_json.items():
             self.initialize_tree()
-            json_tree = {tree_item[0] : tree_item[1]}
-            tree = self.load_tree(json_tree)
+            
+            tree_item = tree_item[1]
+            # 
+            
+            tree = self.load_tree1(tree_item)
             # need of deep copying cause  we have one instance of Tree()
             trees.append(copy.deepcopy(tree))
+        
         
         return trees
 
@@ -76,9 +100,11 @@ class TreeLoader:
             num_comments = 0
             trees = self.get_trees_from_json(filename)
             for tree in trees:
-                num_comments += len(tree.all_nodes())
+                s = len(tree.all_nodes())
+                num_comments += s
             d[filename] = num_comments
         return d
+
 
     def count_trees(self, filenames):
         d = {}
@@ -87,26 +113,50 @@ class TreeLoader:
             d[filename] = len(trees)
         return d
 
+    # only for debugging
+    def get_submissions(self, filename):
+        ids = set()
+        trees = self.get_trees_from_json(filename)
+        for tree in trees:
+            root = tree.get_node(tree.root)
+            print(root.tag)
+            ids.add(root)
+            
+        return ids
+    
+    def test1(self, f1, f2, subreddit_name):
+        
+        id_set1 = self.get_submissions(f1)
+        id_set2 = self.get_submissions(f2)
+        print(len(id_set1))
+        print(len(id_set2))
+        all_trees = id_set1.intersection(id_set2)
+        print(all_trees)
+
+        #reddit_parse = reddit_parser.RedditParser()
+        #json_str = reddit_parse.create_merged_json(all_trees)
+        #reddit_parse.write_json_to_file("{}_{}.json".format(subreddit_name, "both"), json_str)
+
+
 
 
 if __name__ == "__main__":
+    import reddit_parser
+    import reddit_instance
+    
+    reddit = reddit_instance.get_reddit_instance()
+    redit_parse = reddit_parser.RedditParser(reddit)
+    
     tree_loader = TreeLoader()
-    subreddit_name = "Coronavirus"
-    filenames = get_filenames_bysubreddit(subreddit_name,"json")
+    subreddit_name = "science"
+    filenames = get_filenames_bysubreddit(subreddit_name,"json")  
+
+    
     print(tree_loader.count_trees(filenames))
     print(tree_loader.count_comments(filenames))
 
-
-   
-        
-
-
-
     # print(len(tree_loader.users))
-
-
-
-
+    # tree_loader.test1(filenames[0],filenames[1], subreddit_name)
 
 
 
