@@ -130,11 +130,11 @@ class RedditParser():
 
         top_posts = self.extract_top_submissions(sub, keyword, limit)
         print(len(top_posts))
-        extractor = Extractor(self.reddit, top_posts)
-        top_trees = extractor.create_trees(top_posts)
+        top_trees = self.get_trees_by_id(top_posts)
         print("top", self.count_comms(top_trees))
 
         controversial_posts = self.extract_controversial_submissions(sub, keyword, limit)
+        print(len(controversial_posts))
         controversial_trees = self.get_trees_by_id(controversial_posts)
         print("contro", self.count_comms(controversial_trees))
 
@@ -166,17 +166,13 @@ class RedditParser():
             self.save_trees_json_todisk(json_trees)
 
 
-
-
-    
-
 if __name__ == "__main__":
     #settings
     
     reddit = reddit_instance.get_reddit_instance()
     save_to_file = True
     limit = 1000
-    subreddit_name = "vaxxhappened"
+    subreddit_name = "conspiracy"
     keyword = "vaccin"
 
     reddit_parser = RedditParser(reddit)

@@ -24,21 +24,21 @@ RIGHT_RIGHT = 3
 
 class RandomWalkSimulation:
 	
-	def __init__(self, graph, groupA, groupB):
+	def __init__(self, graph):
 		# NetworkX Graph
 		self.G = graph
 		# the graph is saved in a dict for faster processing
 		self.G_dict = {node: list(G[node]) for node in G}
 		# try metis
-		self.groupA = groupA
-		self.groupB = groupB
 
 		# to calculate the average step count
 		self.total_experiments = 0
 		self.total_steps = 0
 
-
 		self.count_ends = {}
+
+	def bisect_graph(self):
+		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
 
 	def sort_graph(self):
 		dict_degrees = { node : self.G.degree(node) for node in self.G.nodes() }
@@ -151,9 +151,6 @@ class RandomWalkSimulation:
 		endup_left = 0
 		endup_right = 0
 		# SETTING
-		# walk_limit = int(len(self.G.nodes)/4)
-		walk_limit = -1
-		# print(walk_limit)
 
 		user_nodes_list = list(user_nodes1.keys())
 		if rw_type == 'rp':
@@ -184,7 +181,7 @@ class RandomWalkSimulation:
 	# starts and performs the whole random walk algorithm and returns the stats for each case
 	# The variables direction1_direction2 count the times that we performed rw starting from destination1 and ended up on destination2
 	def perform_random_walk_experiments(self, sample_percent, n_experiments, rw_type):
-		self.is_highest_degree = rw_type
+		self.bisect_graph()
 		count_stats = [0 for i in range(4)]
 
 		left = list(self.groupA)
@@ -205,6 +202,7 @@ class RandomWalkSimulation:
 			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(self.k_pop, right)
 
 		for i in range(n_experiments):
+			self.bisect_graph()
 			if rw_type == 'rr':
 				user_nodes_left = self.getRandomNodesFromLabels(left_percent, left)
 				user_nodes_right = self.getRandomNodesFromLabels(right_percent, right)
@@ -219,8 +217,7 @@ class RandomWalkSimulation:
 			count_stats[RIGHT_LEFT] += endup_left
 			count_stats[RIGHT_RIGHT] += endup_right
 				
-			# print("experiment:", i)
-		print()
+			print("experiment:", i)
 		# print(sorted(self.count_ends.items(), key=itemgetter(1), reverse=True) )
 		return count_stats
 
@@ -285,31 +282,19 @@ class RandomWalkSimulation:
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "personalfinance_top_wallstreetbets_top.txt"
+	filename = "DebateVaccines_both.txt"
 	G = manager.import_graph(filename)
-	groupA, groupB = manager.bisect_graph(G)
-	# groupA, groupB = list(groupA), list(groupB)
-	# manager.print_single_graph(G)
-
-	# ------
-	# G1 = manager.import_graph("personalfinance_controversial.txt")
-	# G2 = manager.import_graph("wallstreetbets_controversial.txt")
-	# nodes1 = set(G1.nodes)
-	# nodes2 = set(G2.nodes)
-	# print(len(nodes1.intersection(nodes2)))
-	# ------
-	
 	G = nx.Graph(G)
 
 	print(G)
 	
 	sample_percent = 0.1
-	n_experiments = 1000
+	n_experiments = 100
 	# can take either 'rr' 'pp' 'rp' 
-	rw_type = 'rp'
-	save_stat = False
+	rw_type = 'pp'
+	save_stat = 1
 
-	rw = RandomWalkSimulation(G, groupA, groupB)
+	rw = RandomWalkSimulation(G)
 	rw.k_pop = 10
 	polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
 

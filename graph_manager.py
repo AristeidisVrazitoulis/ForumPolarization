@@ -105,7 +105,7 @@ class GraphManager:
         setA = set(graph1.nodes)
         setB = set(graph2.nodes)
         setC = setA.intersection(setB)
-        print(len(setC))
+        print("intersection exists", len(setC))
 
         merged = self.merge_graphs([graph1, graph2])
         filename1 = filename1.split(".")[0]
@@ -220,14 +220,14 @@ if __name__ == "__main__":
     manager = GraphManager()
     # filename = "conspiracy_both.json"
 
-    subreddit = "personalfinance"
-
-    # manager.test1_save_graphs(subreddit)
+    subreddit = "conspiracy"
+    
+    manager.test1_save_graphs(subreddit)
     # manager.test2_save_partitions(subreddit)
     # print()
     # manager.test3_load_partitions(subreddit)
 
-    manager.combine_graphs_from_file("personalfinance_controversial.txt", "wallstreetbets_controversial.txt")
+    # manager.combine_graphs_from_file("personalfinance_controversial.txt", "wallstreetbets_controversial.txt")
 
     # manager.load_bisections("Coronavirus_controversial")
 
