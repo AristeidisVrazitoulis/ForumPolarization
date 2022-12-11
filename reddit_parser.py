@@ -70,11 +70,11 @@ class RedditParser():
     def extract_controversial_submissions(self, subreddit, keyword, limit):
         submission_ids = []
         submissions = subreddit.controversial(time_filter="all", limit = None)
-       
+               
         counter = 0
         for sub in submissions:
-            if keyword in sub.selftext or keyword in sub.title:
-                #print(sub.selftext)
+            text = sub.title.lower()+"\n"+sub.selftext.lower()
+            if (keyword in text):
                 submission_ids.append(sub.id)
                 counter += 1
                 if counter == limit:
@@ -95,12 +95,12 @@ class RedditParser():
         return ret_obj
 
     # takes subreddit and returns the set of post we define(category)
-    def get_all_submissions(self, sub, limit, category="all"):
+    def get_all_submissions(self, sub, keyword, limit, category="all"):
             
         if category != "controversial":
-            top_posts = self.extract_top_submissions(sub, limit)
+            top_posts = self.extract_top_submissions(sub, keyword, limit)
         if category != "top":
-            controversial_posts = self.extract_controversial_submissions(sub, limit)
+            controversial_posts = self.extract_controversial_submissions(sub, keyword, limit)
 
         if category == "top":
             return [top_posts]
@@ -155,15 +155,29 @@ class RedditParser():
         return s
 
     
-    def save_trees_json_todisk(self, json_trees):
+    def save_trees_json_todisk(self, json_trees, names):
         for i in range(len(json_trees)):
-            self.write_json_to_file("{}_{}.json".format(subreddit_name, self.categories[i]), json_trees[i])
+            self.write_json_to_file("{}_{}.json".format(subreddit_name, names[i]), json_trees[i])
 
     def test1(self, subreddit_name, keyword, save_to_file):
         json_trees = self.get_all_json_trees(subreddit_name, keyword, limit)
 
         if save_to_file:
-            self.save_trees_json_todisk(json_trees)
+            self.save_trees_json_todisk(json_trees, self.categories)
+
+    def test2(self, subreddit_name, keyword, save_to_file):
+        sub = self.reddit.subreddit(subreddit_name)
+        ids = self.extract_controversial_submissions(sub, keyword, limit)
+        print(len(ids))
+        extractor = Extractor(reddit, ids)
+        json_tree = list(extractor.create_trees(ids))
+        json_tree = self.create_merged_json(json_tree)
+
+
+        if save_to_file:
+            self.save_trees_json_todisk([json_tree], ["controversial11"])
+
+    
 
 
 if __name__ == "__main__":
@@ -171,13 +185,14 @@ if __name__ == "__main__":
     
     reddit = reddit_instance.get_reddit_instance()
     save_to_file = True
-    limit = 1000
-    subreddit_name = "conspiracy"
-    keyword = "vaccin"
+    limit = 300
+    subreddit_name = "Christianity"
+    keyword = "god"
 
     reddit_parser = RedditParser(reddit)
 
     reddit_parser.test1(subreddit_name, keyword, save_to_file)
+    # reddit_parser.test2(subreddit_name, keyword, save_to_file)
     
     
     

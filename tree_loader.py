@@ -28,7 +28,7 @@ class TreeLoader:
         return tree_data
 
     # returns a treelib object by taking as an input a json object
-    def load_tree1(self, json_tree, parent=None):
+    def load_tree(self, json_tree, parent=None):
 
         self.counter+=1
         # deserializes json object and returns a treelib object
@@ -54,26 +54,9 @@ class TreeLoader:
                 parent=parent, 
                 data={"body":child_data["body"],"score":child_data["score"]}
             )
-            self.load_tree1(json_tree[node_name]['children'][counter], parent)
+            self.load_tree(json_tree[node_name]['children'][counter], parent)
             
-        return self.tree
-
-    def load_tree(self, json_tree, depth=0, parent=None):
-        k, value = list(json_tree.items())[0]
-        # print(k)
-        if parent is None:
-            self.tree.create_node(tag=str(k), identifier=str(k)+str(depth))
-            parent = self.tree.get_node(str(k)+str(depth))
-
-        if not 'children' in json_tree[k]:
-            return
-        for counter,value in enumerate(json_tree[k]['children']):    
-            if isinstance(json_tree[k]['children'][counter], str):
-                self.tree.create_node(tag=value, identifier=value+str(depth), parent=parent)
-            else:
-                self.tree.create_node(tag=list(value)[0], identifier=list(value)[0]+str(depth), parent=parent)
-                self.load_tree(json_tree[k]['children'][counter], depth+1, self.tree.get_node(list(value)[0]+str(depth)) )
-    
+        return self.tree    
 
     # returns a list of treelib objects by reading json file
     def get_trees_from_json(self, filename):
@@ -84,14 +67,32 @@ class TreeLoader:
             self.initialize_tree()
             
             tree_item = tree_item[1]
-            # 
-            
-            tree = self.load_tree1(tree_item)
+            tree = self.load_tree(tree_item)
             # need of deep copying cause  we have one instance of Tree()
             trees.append(copy.deepcopy(tree))
         
-        
         return trees
+
+    def get_modifed_trees_from_json(self, filename):
+        trees =  self.get_trees_from_json(filename)
+        new_trees = []
+        # modify the trees
+        for reply_tree in trees:
+            root_node = reply_tree.get_node(reply_tree.root)
+            modified_tree = Tree()
+            # create the root node
+            modified_tree.create_node(root_node.tag, root_node.identifier, data=root_node.data)
+
+            visited = set()
+            for comment_node in reply_tree.all_nodes_itr():
+                nid = comment_node.identifier
+                if nid == root_node.identifier or comment_node.tag in visited:continue
+                visited.add(comment_node.tag)
+                # parent is always root
+                modified_tree.create_node(comment_node.tag, comment_node.identifier, data=comment_node.data, parent=root_node.identifier)
+            new_trees.append(modified_tree)
+            
+        return new_trees
 
     # takes a set of filenames opens them and counts
     def count_comments(self, filenames):
@@ -124,7 +125,7 @@ class TreeLoader:
             
         return ids
     
-    def test1(self, f1, f2, subreddit_name):
+    def test1(self, f1, f2):
         
         id_set1 = self.get_submissions(f1)
         id_set2 = self.get_submissions(f2)
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     redit_parse = reddit_parser.RedditParser(reddit)
     
     tree_loader = TreeLoader()
-    subreddit_name = "science"
+    subreddit_name = "MensRights"
     filenames = get_filenames_bysubreddit(subreddit_name,"json")  
 
     

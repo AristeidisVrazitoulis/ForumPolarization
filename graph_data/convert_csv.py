@@ -2,8 +2,8 @@
 Converts edge list to csv file for the gephi software
 '''
 
-theme = "vaxx"
-filename = f"{theme}_undirected.txt"
+theme = "italy"
+filename = f"{theme}_top_modified.txt"
 
 first_line = "Source Target\n"
 final_content = ""

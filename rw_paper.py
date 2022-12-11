@@ -14,6 +14,7 @@ from networkx.algorithms import community
 
 
 import networkx as nx
+import metis
 # from utils.get_filenames import get_filenames_bysubreddit
 
 # constants of the array that saves the stats of the experiment
@@ -39,6 +40,30 @@ class RandomWalkSimulation:
 
 	def bisect_graph(self):
 		self.groupA, self.groupB = community.kernighan_lin_bisection(self.G)
+
+	def bisect_metis(self):
+		(edgecuts, parts) = metis.part_graph(self.G, 2)
+		self.groupA = set()
+		self.groupB = set()
+		nodes = list(G.nodes)
+		for i in range(len(G.nodes)):
+			if parts[i] == 1:
+				self.groupA.add(nodes[i])
+			else:
+				self.groupB.add(nodes[i])
+	
+	def manually_bisect(self, groupA, groupB):
+		mutual_nodes = groupA.intersection(groupB)
+
+		for node in mutual_nodes:
+			if random.random() > 0.5:
+				groupA.remove(node)
+			else:
+				groupB.remove(node)
+		
+		self.groupA = groupA
+		self.groupB = groupB
+
 
 	def sort_graph(self):
 		dict_degrees = { node : self.G.degree(node) for node in self.G.nodes() }
@@ -109,7 +134,6 @@ class RandomWalkSimulation:
 
 				side = "right"
 				break
-			
 
 			if step_count > len(self.G.nodes)*2:break
 
@@ -180,8 +204,8 @@ class RandomWalkSimulation:
 
 	# starts and performs the whole random walk algorithm and returns the stats for each case
 	# The variables direction1_direction2 count the times that we performed rw starting from destination1 and ended up on destination2
-	def perform_random_walk_experiments(self, sample_percent, n_experiments, rw_type):
-		self.bisect_graph()
+	def perform_random_walk_experiments(self, sample_percent, n_experiments, rw_type, inter_polarity = False):
+		if not inter_polarity: self.bisect_metis()
 		count_stats = [0 for i in range(4)]
 
 		left = list(self.groupA)
@@ -192,17 +216,16 @@ class RandomWalkSimulation:
 		# also assume that you are given a set of nodes (news articles) that have been read by a user
 		# user_nodes = getRandomNodes(G,2) # for now, using a random set of nodes. Use a specific set later when testing
 		# start_end
-
-		left_percent = int(sample_percent*len(dict_left.keys()))
-		right_percent = int(sample_percent*len(dict_right.keys()))
-
-		if rw_type in ('pp','rp'):
+		if rw_type == 'rr':
+			left_percent = int(sample_percent*len(dict_left.keys()))
+			right_percent = int(sample_percent*len(dict_right.keys()))
+		else:
 			self.sort_graph()
 			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(self.k_pop, left)
 			user_nodes_right = self.getNodesFromLabelsWithHighestDegree(self.k_pop, right)
 
 		for i in range(n_experiments):
-			self.bisect_graph()
+			if not inter_polarity: self.bisect_metis()
 			if rw_type == 'rr':
 				user_nodes_left = self.getRandomNodesFromLabels(left_percent, left)
 				user_nodes_right = self.getRandomNodesFromLabels(right_percent, right)
@@ -248,13 +271,14 @@ class RandomWalkSimulation:
 	def __get_avg_walklength(self):
 		return round(self.total_steps/self.total_experiments,4)
 
-	def easy_run(self, sample_percent, n_experiments, rw_type):
-		count_stats = self.perform_random_walk_experiments(sample_percent, n_experiments, rw_type)
+	def easy_run(self, sample_percent, n_experiments, rw_type, inter_polarity=False):
+		count_stats = self.perform_random_walk_experiments(sample_percent, n_experiments, rw_type, inter_polarity)
 		p = self.compute_probabilities_by_stats(count_stats)
 		polarity = self.compute_polarity(p)
 		self.print_all_stats(p, count_stats)
 		print("polarity:",polarity)
 		return polarity
+
 
 
 	def print_all_stats(self, p, count_stats):
@@ -275,28 +299,71 @@ class RandomWalkSimulation:
 			rw_type,
 			self.__get_avg_walklength()
 			)
-		with open("statistics/rw_stats.csv","a") as f:
+		with open("statistics/random_walk/rw_stats.csv", "a") as f:
 			f.write(data_line)
+
+	def run_multiple_experiments():
+		manager = GraphManager()
+		subs = ["science", "DebateVaccines"]
+		cats = ["top", "controversial", "both"]
+		types = ['rr', 'rp', 'pp']
+		for sub in subs:
+			for cat in cats:
+				filename = sub+"_"+cat+".txt"
+				G = manager.import_graph(filename)
+				G = nx.Graph(G)
+				print(G)
+				sample_percent = 0.1
+				n_experiments = 100
+				# can take either 'rr' 'pp' 'rp' 
+				for t in types:
+					rw_type = t
+					save_stat = 1
+					rw = RandomWalkSimulation(G)
+
+					rw.k_pop = 10
+					polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
+
+					if save_stat:
+						rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)
+					
+def inter_polarization(manager, file1, file2):
+	G1 = manager.import_graph(file1)
+	print(G1)
+	groupA = set(G1.nodes)
+
+	G2 = manager.import_graph(file2)
+	print(G2)
+	groupB = set(G2.nodes)
+	return (groupA, groupB)
 
 
 if __name__ == "__main__":
 
 	manager = GraphManager()
-	filename = "DebateVaccines_both.txt"
+
+	filename = "Christianity_controversial.txt"
+	
 	G = manager.import_graph(filename)
 	G = nx.Graph(G)
-
 	print(G)
+
 	
 	sample_percent = 0.1
 	n_experiments = 100
 	# can take either 'rr' 'pp' 'rp' 
-	rw_type = 'pp'
-	save_stat = 1
-
+	rw_type = 'rp'
+	save_stat = 0
+	inter_polarity = False
 	rw = RandomWalkSimulation(G)
+	if inter_polarity:
+		file1 = "worldnews_both.txt"
+		file2 = "conspiracy_both.txt"
+		(groupA, groupB) = inter_polarization(manager, file1, file2)
+		rw.manually_bisect(groupA, groupB)
+
 	rw.k_pop = 10
-	polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
+	polarity = rw.easy_run(sample_percent, n_experiments, rw_type, inter_polarity)
 
 	if save_stat:
 		rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)

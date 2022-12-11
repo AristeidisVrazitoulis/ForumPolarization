@@ -60,7 +60,6 @@ class GraphManager:
 
             parent = reply_tree.parent(nid)
             if parent is None or parent.tag == "AutoModerator": continue
-            if parent is None: continue
             
             # edge_sign = self.determine_edge_sign(child, parent, perspective)
             edge_sign = 1
@@ -77,17 +76,14 @@ class GraphManager:
 
     # merges all trees given from a file
     # returns an nx graph
-    def get_unified_graph_from_file(self, filename):
-        tree_loader = TreeLoader()
-        trees = tree_loader.get_trees_from_json(filename)
+    def create_graph_from_trees(self, trees):
+        
         ucgs = []
         for tree in trees:
             ucg = self.create_multigraph(tree)
             ucgs.append(ucg)
 
         return self.merge_graphs(ucgs)
-
-    
 
 
     def export_graph(self, graph, filename, data=False):
@@ -113,7 +109,7 @@ class GraphManager:
         graph_name =  "{}_{}.txt".format(filename1, filename2)
         merged = self.get_connected_graph(merged)
 
-        self.partition_and_save(merged, graph_name)
+        # self.partition_and_save(merged, graph_name)
 
         self.export_graph(merged, graph_name)
 
@@ -140,15 +136,24 @@ class GraphManager:
         return g
 
 
-    # loads trees from disk and saves an nx graph to disk
-    def load_tree_save_to_disk(self, filename):
+    # loads trees from disk and makes a graph
+    def get_graph_from_file(self, filename, modified=False):
         
+        tree_loader = TreeLoader()
         print(filename)
-        g = self.get_unified_graph_from_file(filename)
+        if modified:
+            trees = tree_loader.get_modifed_trees_from_json(filename)
+        else:
+            trees = tree_loader.get_trees_from_json(filename)
+
+        g = self.create_graph_from_trees(trees)
         self.print_single_graph(g)
+        # The graph might not be connected so we take the largest component of the graph
         g = self.get_connected_graph(g)
-        print("h",g)
-        self.export_graph(g, filename.split(".")[0]+".txt")
+
+        print("connected component", g)
+        return g
+        # self.export_graph(g, filename.split(".")[0]+".txt")
 
     def bisect_graph(self, G):
         if nx.is_directed(G):
@@ -197,37 +202,29 @@ class GraphManager:
         self.save_partitions(graph_name, groupA, groupB)
 
 
-    def test1_save_graphs(self, sub_name):
-        filenames = get_filenames_bysubreddit(sub_name, "json")
+    def test1_save_graphs(self, sub_name, modify):
+        filenames = get_filenames_bysubreddit(sub_name, "")
         for filename in filenames:
-            self.load_tree_save_to_disk(filename)
+            connected_graph = self.get_graph_from_file(filename + "json", modify)
+            if modify:
+                filename=filename[:len(filename)-1]+"_modified."
+            self.export_graph(connected_graph, filename+"txt")
 
-    def test2_save_partitions(self, sub_name):
-        filenames = get_filenames_bysubreddit(sub_name, "txt")
-        for filename in filenames:
-            
-            G = self.import_graph(filename)
-            self.partition_and_save(G, filename)
 
-    def test3_load_partitions(self, sub_name):
-        filenames = get_filenames_bysubreddit(sub_name, "txt")
-        for filename in filenames:
-            self.load_partitions(filename)
- 
 
 if __name__ == "__main__":
    
     manager = GraphManager()
     # filename = "conspiracy_both.json"
 
-    subreddit = "conspiracy"
+    subreddit = "atheism"
+    modify = False
     
-    manager.test1_save_graphs(subreddit)
-    # manager.test2_save_partitions(subreddit)
-    # print()
-    # manager.test3_load_partitions(subreddit)
+    # manager.get_graph_from_file("DebateVaccines_controversial11.json")
 
-    # manager.combine_graphs_from_file("personalfinance_controversial.txt", "wallstreetbets_controversial.txt")
+    manager.test1_save_graphs(subreddit, modify)
+
+    # manager.combine_graphs_from_file("worldnews_both.txt", "conspiracy_both.txt")
 
     # manager.load_bisections("Coronavirus_controversial")
 
