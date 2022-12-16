@@ -29,7 +29,7 @@ class RandomWalkSimulation:
 		# NetworkX Graph
 		self.G = graph
 		# the graph is saved in a dict for faster processing
-		self.G_dict = {node: list(G[node]) for node in G}
+		self.G_dict = {node: list(self.G[node]) for node in self.G}
 		# try metis
 
 		# to calculate the average step count
@@ -45,8 +45,8 @@ class RandomWalkSimulation:
 		(edgecuts, parts) = metis.part_graph(self.G, 2)
 		self.groupA = set()
 		self.groupB = set()
-		nodes = list(G.nodes)
-		for i in range(len(G.nodes)):
+		nodes = list(self.G.nodes)
+		for i in range(len(self.G.nodes)):
 			if parts[i] == 1:
 				self.groupA.add(nodes[i])
 			else:
@@ -302,30 +302,35 @@ class RandomWalkSimulation:
 		with open("statistics/random_walk/rw_stats.csv", "a") as f:
 			f.write(data_line)
 
-	def run_multiple_experiments():
-		manager = GraphManager()
-		subs = ["science", "DebateVaccines"]
-		cats = ["top", "controversial", "both"]
-		types = ['rr', 'rp', 'pp']
-		for sub in subs:
-			for cat in cats:
-				filename = sub+"_"+cat+".txt"
-				G = manager.import_graph(filename)
-				G = nx.Graph(G)
-				print(G)
-				sample_percent = 0.1
-				n_experiments = 100
-				# can take either 'rr' 'pp' 'rp' 
-				for t in types:
-					rw_type = t
-					save_stat = 1
-					rw = RandomWalkSimulation(G)
 
-					rw.k_pop = 10
-					polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
 
-					if save_stat:
-						rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)
+def run_multiple_experiments():
+	manager = GraphManager()
+	subs = ["WitchesVsPatriarchy"]
+	cats = ["top", "controversial", "both"]
+	types = ['rr', 'rp', 'pp']
+	modified = True
+	for sub in subs:
+		for cat in cats:
+			if modified: filename = sub+"_"+cat+"_modified.txt"
+			else: filename = sub+"_"+cat+".txt"
+			print(filename)
+			G = manager.import_graph(filename)
+			Gr = nx.Graph(G)
+			print(G)
+			sample_percent = 0.1
+			n_experiments = 100
+			# can take either 'rr' 'pp' 'rp' 
+			for t in types:
+				rw_type = t
+				save_stat = 1
+				rw = RandomWalkSimulation(Gr)
+
+				rw.k_pop = 10
+				polarity = rw.easy_run(sample_percent, n_experiments, rw_type)
+
+				if save_stat:
+					rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)
 					
 def inter_polarization(manager, file1, file2):
 	G1 = manager.import_graph(file1)
@@ -339,10 +344,11 @@ def inter_polarization(manager, file1, file2):
 
 
 if __name__ == "__main__":
-
+	# run_multiple_experiments()
+	
 	manager = GraphManager()
 
-	filename = "Christianity_controversial.txt"
+	filename = "WitchesVsPatriarchy_controversial_modified_MensRights_controversial_modified.txt"
 	
 	G = manager.import_graph(filename)
 	G = nx.Graph(G)
@@ -352,13 +358,13 @@ if __name__ == "__main__":
 	sample_percent = 0.1
 	n_experiments = 100
 	# can take either 'rr' 'pp' 'rp' 
-	rw_type = 'rp'
-	save_stat = 0
-	inter_polarity = False
+	rw_type = 'pp'
+	save_stat = 1
+	inter_polarity = True
 	rw = RandomWalkSimulation(G)
 	if inter_polarity:
-		file1 = "worldnews_both.txt"
-		file2 = "conspiracy_both.txt"
+		file1 = "WitchesVsPatriarchy_controversial_modified.txt"
+		file2 = "MensRights_controversial_modified.txt"
 		(groupA, groupB) = inter_polarization(manager, file1, file2)
 		rw.manually_bisect(groupA, groupB)
 
@@ -367,15 +373,3 @@ if __name__ == "__main__":
 
 	if save_stat:
 		rw.save_stats(filename, polarity, rw_type, n_experiments, sample_percent)
-	
-
-
-
-
-	
-
-
-
-
-
-

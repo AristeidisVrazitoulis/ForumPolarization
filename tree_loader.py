@@ -78,6 +78,7 @@ class TreeLoader:
         new_trees = []
         # modify the trees
         for reply_tree in trees:
+            if reply_tree.root is None: continue
             root_node = reply_tree.get_node(reply_tree.root)
             modified_tree = Tree()
             # create the root node
@@ -149,8 +150,9 @@ if __name__ == "__main__":
     redit_parse = reddit_parser.RedditParser(reddit)
     
     tree_loader = TreeLoader()
-    subreddit_name = "MensRights"
-    filenames = get_filenames_bysubreddit(subreddit_name,"json")  
+    subreddit_name = "worldnews"
+
+    filenames = get_filenames_bysubreddit(subreddit_name, "json")  
 
     
     print(tree_loader.count_trees(filenames))

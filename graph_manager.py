@@ -18,16 +18,19 @@ from networkx.algorithms import community
 
 class GraphManager:
 
+
     # takes as input a comment and the answer of the comment
     # and determines the sign of the edge
     def determine_edge_sign(self, child, parent, perspective):
+
         edge_sign = child.data["score"]*parent.data["score"]
         # assign edge sign
         if child.data["score"] < 0 and parent.data["score"] < 0:
             if perspective.is_prob_insult(child.data["body"]):
-                print(child.data["body"])
-                print("-------------")
+                # print(child.data["body"])
+                # print("-------------")
                 edge_sign = -1
+                self.count_hate_comments += 1
             # limit of 1 request per second
             time.sleep(1.05)
             
@@ -61,8 +64,8 @@ class GraphManager:
             parent = reply_tree.parent(nid)
             if parent is None or parent.tag == "AutoModerator": continue
             
-            # edge_sign = self.determine_edge_sign(child, parent, perspective)
-            edge_sign = 1
+            edge_sign = self.determine_edge_sign(child, parent, perspective)
+            # edge_sign = 1
 
             # make a directed edge child -> parent
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
@@ -86,13 +89,13 @@ class GraphManager:
         return self.merge_graphs(ucgs)
 
 
-    def export_graph(self, graph, filename, data=False):
+    def export_graph(self, graph, filename, data=True):
         filepath = "graph_data/{}".format(filename)
-        nx.write_edgelist(graph, filepath, data=data)
+        nx.write_weighted_edgelist(graph, filepath)
 
     def import_graph(self, filename):
         filepath = "graph_data/{}".format(filename)
-        return nx.MultiDiGraph(nx.read_edgelist(filepath))
+        return nx.MultiDiGraph(nx.read_weighted_edgelist(filepath, create_using=nx.MultiDiGraph))
 
     def combine_graphs_from_file(self, filename1, filename2):
         graph1 = self.import_graph(filename1)
@@ -114,7 +117,7 @@ class GraphManager:
         self.export_graph(merged, graph_name)
 
     def print_single_graph(self, graph):
-        print(graph, "denstity:", round(nx.density(graph),4))
+        print(graph)
 
     def print_graph_stats(self, subr):
         filenames = get_filenames_bysubreddit(subr,"txt")
@@ -146,12 +149,16 @@ class GraphManager:
         else:
             trees = tree_loader.get_trees_from_json(filename)
 
+        self.count_hate_comments = 0
         g = self.create_graph_from_trees(trees)
+        print("# hate comments", self.count_hate_comments)
+
         self.print_single_graph(g)
         # The graph might not be connected so we take the largest component of the graph
         g = self.get_connected_graph(g)
 
         print("connected component", g)
+        print()
         return g
         # self.export_graph(g, filename.split(".")[0]+".txt")
 
@@ -161,45 +168,13 @@ class GraphManager:
         groupA, groupB = community.kernighan_lin_bisection(G)
         return (groupA, groupB)
     
-    def save_partitions(self, graph_name, groupA, groupB):
-        filepath = "graph_data/graph_partitions/{}".format(graph_name)
-        # convert to list
-        groupA, groupB = list(groupA), list(groupB)
-        print(len(groupA), len(groupB))
+    def calculate_average_degree(self, G):
+        return sum([node[1] for node in G.degree])/len(G.degree)
+    
+    def calculate_clustering_coefficient(self, G):
+        coeffs = nx.clustering(G)
+        return sum(coeffs.values())/len(coeffs)
 
-        min_length = min(len(groupA), len(groupB))
-        with open(filepath, "w") as f:
-            for i in range(min_length):
-                f.write(f"{groupA[i]},{groupB[i]}\n")
-
-            # for i in range(min_length, len(groupB)): .. 
-            if len(groupA) > len(groupB):
-                f.write(f"{groupA[len(groupA)-1]},")
-            elif len(groupA) < len(groupB):
-                f.write(f",{groupB[len(groupB)-1]}")
-
-
-    def load_partitions(self, graph_name):
-        filepath = "graph_data/graph_partitions/{}".format(graph_name)
-        groupA = set()
-        groupB = set()
-        with open(filepath, "r") as f:
-            for line in f.readlines():
-                users = line.split(",")
-                if users[0] == "":
-                    groupB.add(users[1])
-                elif users[1] == "":
-                    groupA.add(users[0])
-                else:
-                    groupA.add(users[0])
-                    groupB.add(users[1])
-        print(len(groupA),len(groupB))
-        return (groupA, groupB)
-
-
-    def partition_and_save(self, G, graph_name):
-        groupA, groupB = self.bisect_graph(G)
-        self.save_partitions(graph_name, groupA, groupB)
 
 
     def test1_save_graphs(self, sub_name, modify):
@@ -216,17 +191,16 @@ if __name__ == "__main__":
    
     manager = GraphManager()
     # filename = "conspiracy_both.json"
+    subs = ["conspiracy", "worldnews", "WitchesVsPatriarchy", "MensRights"]
+    for sub in subs:
+        modify = False
+        
+        # manager.get_graph_from_file("DebateVaccines_controversial11.json")
 
-    subreddit = "atheism"
-    modify = False
-    
-    # manager.get_graph_from_file("DebateVaccines_controversial11.json")
+        manager.test1_save_graphs(sub, modify)
 
-    manager.test1_save_graphs(subreddit, modify)
+    # manager.combine_graphs_from_file("WitchesVsPatriarchy_controversial_modified.txt", "MensRights_controversial_modified.txt")
 
-    # manager.combine_graphs_from_file("worldnews_both.txt", "conspiracy_both.txt")
-
-    # manager.load_bisections("Coronavirus_controversial")
 
 
 
