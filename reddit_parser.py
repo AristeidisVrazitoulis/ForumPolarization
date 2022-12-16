@@ -4,7 +4,6 @@ This file takes as an input a post id from reddit and saves the tree as json to 
 import json
 from treelib import Tree
 from utils.settings import get_filenames_bysubreddit,categories
-from extractor import Extractor
 import reddit_instance
 
 class RedditParser():
@@ -165,18 +164,6 @@ class RedditParser():
         if save_to_file:
             self.save_trees_json_todisk(json_trees, self.categories)
 
-    def test2(self, subreddit_name, keyword, save_to_file):
-        sub = self.reddit.subreddit(subreddit_name)
-        ids = self.extract_controversial_submissions(sub, keyword, limit)
-        print(len(ids))
-        extractor = Extractor(reddit, ids)
-        json_tree = list(extractor.create_trees(ids))
-        json_tree = self.create_merged_json(json_tree)
-
-
-        if save_to_file:
-            self.save_trees_json_todisk([json_tree], ["controversial11"])
-
     
 
 
@@ -186,12 +173,14 @@ if __name__ == "__main__":
     reddit = reddit_instance.get_reddit_instance()
     save_to_file = True
     limit = 300
-    subreddit_name = "Christianity"
-    keyword = "god"
+    subreddit_name = "worldnews"
+    keyword = "corona"
 
     reddit_parser = RedditParser(reddit)
-
-    reddit_parser.test1(subreddit_name, keyword, save_to_file)
+    subreddit = reddit.subreddit(subreddit_name)
+    ids = reddit_parser.extract_controversial_submissions(subreddit, keyword, 300)
+    print(len(ids))
+    # reddit_parser.test1(subreddit_name, keyword, save_to_file)
     # reddit_parser.test2(subreddit_name, keyword, save_to_file)
     
     
