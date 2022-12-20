@@ -192,14 +192,14 @@ if __name__ == "__main__":
     manager = GraphManager()
     # filename = "conspiracy_both.json"
     subs = ["conspiracy", "worldnews", "WitchesVsPatriarchy", "MensRights"]
-    for sub in subs:
-        modify = False
+    
+    modify = False
         
         # manager.get_graph_from_file("DebateVaccines_controversial11.json")
 
-        manager.test1_save_graphs(sub, modify)
+    # manager.test1_save_graphs(sub, modify)
 
-    # manager.combine_graphs_from_file("WitchesVsPatriarchy_controversial_modified.txt", "MensRights_controversial_modified.txt")
+    manager.combine_graphs_from_file("WitchesVsPatriarchy_both.txt", "MensRights_both.txt")
 
 
 

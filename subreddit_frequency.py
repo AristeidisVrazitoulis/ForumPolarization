@@ -1,7 +1,7 @@
 import reddit_instance
 import praw
 
-keyword = "capitalism"
+keyword = "patriarchy"
 reddit = reddit_instance.get_reddit_instance()
 sub = reddit.subreddit("all")
 d = {}

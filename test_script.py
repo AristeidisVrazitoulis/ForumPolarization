@@ -1,6 +1,6 @@
 from graph_manager import GraphManager
 import networkx as nx
-
+import pandas as pd
 def calculate_average_degree(G):
     return sum([node[1] for node in G.degree])/len(G.degree)
 
@@ -9,13 +9,9 @@ subs = ["Coronavirus", "science", "conspiracy", "worldnews", "WitchesVsPatriarch
 cats = ["top","controversial","both"]
 manager = GraphManager()
 
-for sub in subs:
-    for cat in cats:
-        filename = f"{sub}_{cat}.txt"
-        G = manager.import_graph(filename)
-        print(len(G.edges))
-        G = nx.Graph(G)
 
-        print(G)
-        print()
-
+filename = "Coronavirus_both.txt"
+G = manager.import_graph(filename)
+print(G)
+G = nx.Graph(G)
+print(G)
