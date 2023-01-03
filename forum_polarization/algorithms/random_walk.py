@@ -120,7 +120,6 @@ class RandomWalkSimulation:
 	# returns if we ended up in a "left" node or a "right" node
 	def performRandomWalk(self, starting_node, user_nodes_side1, user_nodes_side2, weighted=False): 
 		# contains unique nodes seen till now
-		dict_nodes = {} 
 		
 		step_count = 0
 		side = ""
@@ -130,7 +129,7 @@ class RandomWalkSimulation:
 			
 
 			neighbors = self.G_dict[starting_node]
-			if len(neighbors) == 0: return
+			if len(neighbors) == 0:	return
 
 			if weighted:
 				weights = [self.G[starting_node][n]['weight'] for n in neighbors]
@@ -139,24 +138,20 @@ class RandomWalkSimulation:
 				random_num = random.randint(0, len(neighbors)-1)
 				starting_node = neighbors[random_num]
 
-			dict_nodes[starting_node] = 1
 			step_count += 1
 			if starting_node in user_nodes_side1:
-				if starting_node in self.count_ends: self.count_ends[starting_node] += 1
-				else: self.count_ends[starting_node] = 1
+				
 				side = "left"
 				break
 
 			if starting_node in user_nodes_side2:
-				if starting_node in self.count_ends: self.count_ends[starting_node] += 1
-				else: self.count_ends[starting_node] = 1
 				side = "right"
 				break
 
-			if step_count > len(self.G.nodes)*2:break
+			#if step_count > len(self.G.nodes)*2:print("edw")break
 
 		self.total_experiments += 1
-		self.total_steps += step_count		
+		self.total_steps += step_count	
 		return side
 
 	# returns the number of steps taken before reaching *ALL* node from the set of user nodes. difference from the above method is that we should reach all nodes, instead of just any one of them.
@@ -237,6 +232,7 @@ class RandomWalkSimulation:
 		if rw_type == 'rr':
 			left_percent = int(sample_percent*len(dict_left.keys()))
 			right_percent = int(sample_percent*len(dict_right.keys()))
+			print(left_percent)
 		else:
 			self.sort_graph()
 			user_nodes_left = self.getNodesFromLabelsWithHighestDegree(self.k_pop, left)
@@ -260,6 +256,7 @@ class RandomWalkSimulation:
 				
 			print("experiment:", i)
 		# print(sorted(self.count_ends.items(), key=itemgetter(1), reverse=True) )
+		print(count_stats)
 		return count_stats
 
 
@@ -274,7 +271,7 @@ class RandomWalkSimulation:
 		except ZeroDivisionError:
 			print("Zero Division")
 			print(count_stats)
-			p = 1
+			# p = 1
 		return p
 
 
@@ -330,7 +327,7 @@ def run_multiple_experiments():
 	types = ['rr', 'rp', 'pp']
 	modified = True
 	weighted = False
-	sample_percent = 0.1
+	sample_percent = 0.05
 	n_experiments = 100
 	save_stat = 1
 	for sub in subs:
@@ -369,16 +366,16 @@ if __name__ == "__main__":
 	# run_multiple_experiments()
 
 	sample_percent = 0.1
-	n_experiments = 100
+	n_experiments = 300
 	# can take either 'rr' 'pp' 'rp' 
-	rw_type = 'pp'
-	save_stat = True
-	inter_polarity = True
-	weighted = False
+	rw_type = 'rp'
+	save_stat = False
+	inter_polarity = False
+	weighted = True
 	
 	manager = GraphManager()
 
-	filename = "conspiracy0_both_modified_space_both_modified.txt"
+	filename = "esn2.txt"
 	
 	G = manager.import_graph(filename, weighted=weighted)
 	if not weighted:

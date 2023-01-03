@@ -14,7 +14,7 @@ from httplib2 import ServerNotFoundError
 from utils import commons
 from preprocessing.perspective_api import perspective
 
-from tree_loader import TreeLoader
+from preprocessing.tree_loader import TreeLoader
 from networkx.algorithms import community
 
 
@@ -247,7 +247,7 @@ class GraphManager:
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         graph_name =  "{}_{}.txt".format(filename1, filename2)
-        self.export_graph(merged, graph_name)
+        # self.export_graph(merged, graph_name)
 
 
 
@@ -272,22 +272,12 @@ if __name__ == "__main__":
    
     manager = GraphManager()
     # filename = "conspiracy_both.json"
-
-    for sub in commons.all_subreddits:
-
-        names = commons.get_filenames_by_subreddit(sub,"txt",True)
-        for name in names:
-            g = manager.import_graph(name)
-            g = nx.Graph(g)
-            print(name,g)
-            print(manager.calculate_average_degree(g))
-            print()
-
+    
     # manager.test1_save_graphs(sub, modify)
 
 
     # manager.test5_save_interweighted_graphs("conspiracy0_both.txt", "space_both.txt")
-    # manager.test4_combine_graphs("conspiracy0_top.txt", "space_top.txt")
+    # manager.test4_combine_graphs("lgbt_both.txt", "Conservative_both.txt")
     # for sub in commons.all_subreddits:
     #     manager.test2_save_probability_graphs(sub)
     
