@@ -366,16 +366,16 @@ if __name__ == "__main__":
 	# run_multiple_experiments()
 
 	sample_percent = 0.1
-	n_experiments = 300
+	n_experiments = 10
 	# can take either 'rr' 'pp' 'rp' 
 	rw_type = 'rp'
 	save_stat = False
-	inter_polarity = False
-	weighted = True
+	inter_polarity = True
+	weighted = False
 	
 	manager = GraphManager()
 
-	filename = "esn2.txt"
+	filename = "Coronavirus_top_science_top.txt"
 	
 	G = manager.import_graph(filename, weighted=weighted)
 	if not weighted:
@@ -387,9 +387,9 @@ if __name__ == "__main__":
 	if inter_polarity:
 		
 		parts = filename.split("_")
-		file1 = f"conspiracy0_both_modified.txt"
+		file1 = f"Coronavirus_top.txt"
 		# print(file1)
-		file2 = f"space_both_modified.txt"
+		file2 = f"science_both.txt"
 		(groupA, groupB) = inter_polarization(manager, file1, file2, weighted)
 		rw.manually_bisect(groupA, groupB)
 

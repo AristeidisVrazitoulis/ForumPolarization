@@ -7,7 +7,7 @@ theme = "lgbt_top_Conservative_top"
 
 
 filename = f"{theme}.txt"
-path = "forum_polarization/preprocessing/graph_data/"
+path = "../preprocessing/graph_data/"
 source_path = path+f"{filename}"
 target_path = path+f"gephi_format/{theme}_gephi.csv"
 

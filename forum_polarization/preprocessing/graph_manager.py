@@ -101,8 +101,8 @@ class GraphManager:
             parent = reply_tree.parent(nid)
             if parent is None or parent.tag == "AutoModerator": continue
             
-            # edge_sign = self.determine_edge_sign(child, parent, perspective)
-            edge_sign = 1
+            edge_sign = self.determine_edge_sign(child, parent, perspective)
+            # edge_sign = 1
 
             # make a directed edge child -> parent
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
@@ -133,9 +133,11 @@ class GraphManager:
         nx.write_weighted_edgelist(graph, filepath)
 
     def import_graph(self, filename, specific_path="", weighted=False):
+        
         if specific_path != "":
             filepath = specific_path
-        filepath = "forum_polarization/preprocessing/graph_data/{}".format(filename)
+        else:
+            filepath = "forum_polarization/preprocessing/graph_data/{}".format(filename)
         if weighted:
             return nx.read_weighted_edgelist(filepath, create_using=nx.DiGraph)
         return nx.read_weighted_edgelist(filepath, create_using=nx.MultiDiGraph)
@@ -212,10 +214,29 @@ class GraphManager:
         coeffs = nx.clustering(G)
         return sum(coeffs.values())/len(coeffs)
 
+    def modify_signed_format(self, sub):
+        filename = f"graph_data/{sub}_both.txt"
+
+        name_graph = nx.read_weighted_edgelist(filename)
+
+        nodes = list(name_graph.nodes)
+        n_nodes = len(nodes)
+
+        node_map = {nodes[i]:i for i in range(len(nodes))}
+        
+        with open(f"graph_data/signed_graphs/{sub}.txt", 'w') as f1, open(filename, 'r') as f2:
+            f1.write("#\t{}\n".format(n_nodes))
+            for line in f2.readlines():
+                edges = line.split()
+                edges[2] = str(int(float(edges[2])))
+                f1.write("{}\t{}\t{}\n".format(node_map[edges[0]], node_map[edges[1]], edges[2]))
+
+
 
 
     def test1_save_graphs(self, sub_name, modify):
         filenames = commons.get_filenames_by_subreddit(sub_name, "")
+        filenames = ["space_both"]
         for filename in filenames:
             connected_graph = self.get_graph_from_file(filename + ".json", modify)
             if modify:
@@ -226,18 +247,19 @@ class GraphManager:
         
         filenames = commons.get_filenames_by_subreddit(sub_name, "txt")
         for file in filenames:
-            graph = manager.import_graph(file)
-            new_graph = manager.aggregate_graph(graph)
-            new_graph = manager.make_probability_graph(new_graph)
-            manager.export_graph(new_graph, f"weighted_graphs/{file}")
+            graph = self.import_graph(file)
+            new_graph = self.aggregate_graph(graph)
+            new_graph = self.make_probability_graph(new_graph)
+            self.export_graph(new_graph, f"weighted_graphs/{file}")
 
     def test3_save_signed_graphs(self, sub_name):
         
         filenames = commons.get_filenames_by_subreddit(sub_name, "txt")
+        filenames = ["space_both.txt"]
         for file in filenames:
-            graph = manager.import_graph(file)
-            new_graph = manager.aggregate_signed_graph(graph)
-            manager.export_graph(new_graph, f"signed_graphs/{file}")
+            graph = self.import_graph(file)
+            new_graph = self.aggregate_signed_graph(graph)
+            self.export_graph(new_graph, f"signed_graphs/{file}")
 
     def test4_combine_graphs(self, filename1, filename2):
         graph1 = self.import_graph(filename1)
@@ -247,9 +269,7 @@ class GraphManager:
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         graph_name =  "{}_{}.txt".format(filename1, filename2)
-        # self.export_graph(merged, graph_name)
-
-
+        self.export_graph(merged, graph_name)
 
 
     def test5_save_interweighted_graphs(self, filename1, filename2):
@@ -263,7 +283,17 @@ class GraphManager:
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         graph_name =  "{}_{}.txt".format(filename1, filename2)
-        manager.export_graph(probability_graph, f"weighted_graphs/{graph_name}")
+        self.export_graph(probability_graph, f"weighted_graphs/{graph_name}")
+
+    def test6_combine_signed_graphs(self, filename1, filename2):
+        
+        filename1 = filename1.split(".")[0]
+        filename2 = filename2.split(".")[0]
+        graph_name =  "{}_{}.txt".format(filename1, filename2)
+        g = self.import_graph(graph_name)
+        print(g)
+        new_graph = self.aggregate_signed_graph(g)
+        self.export_graph(new_graph, f"signed_graphs/{graph_name}")
 
 
 
@@ -271,13 +301,32 @@ class GraphManager:
 if __name__ == "__main__":
    
     manager = GraphManager()
+    sub = "conspiracy0_both_space"
+    modify = False
     # filename = "conspiracy_both.json"
     
     # manager.test1_save_graphs(sub, modify)
+    # manager.test3_save_signed_graphs("")
+    combs = [["science_top.txt", "conspiracy_top.txt"],["science_controversial.txt", "conspiracy_controversial.txt"],["science_both.txt", "conspiracy_both.txt"],
+            ["Coronavirus_top.txt", "conspiracy_top.txt"],["Coronavirus_controversial.txt", "conspiracy_controversial.txt"],["Coronavirus_both.txt", "conspiracy_both.txt"],
+            ["WitchesVsPatriarchy_top.txt", "Mensrights_top.txt"],["WitchesVsPatriarchy_controversial.txt", "Mensrights_controversial.txt"],["WitchesVsPatriarchy_both.txt", "Mensrights_both.txt"],
+            ["lgbt_top.txt", "Conservative_top.txt"],["lgbt_controversial.txt", "Conservative_controversial.txt"],["lgbt_both.txt", "Conservative_both.txt"],
+            ["conspiracy0_top.txt", "space_top.txt"],["conspiracy0_controversial.txt", "space_controversial.txt"],["conspiracy0_both.txt", "space_both.txt"]]
+    
+    # manager.test4_combine_graphs("Coronavirus_controversial.txt", "science_controversial.txt")
+    #f = "Coronavirus_both_science_both.txt"
+    #g = manager.import_graph(f)
+    #g = manager.aggregate_signed_graph(g)
+    #manager.export_graph(g, f"signed_graphs/{f}")
+    f1 = "Coronavirus_both.txt"
+    f2 = "conspiracy_both.txt"
+    # manager.test4_combine_graphs(f1, f2)
+    # manager.test6_combine_signed_graphs(f1, f2)
 
-
-    # manager.test5_save_interweighted_graphs("conspiracy0_both.txt", "space_both.txt")
-    # manager.test4_combine_graphs("lgbt_both.txt", "Conservative_both.txt")
+    manager.modify_signed_format(sub)
+    
+    # for comb in combs:
+    #    manager.test5_save_interweighted_graphs(comb[0], comb[1])
     # for sub in commons.all_subreddits:
     #     manager.test2_save_probability_graphs(sub)
     
