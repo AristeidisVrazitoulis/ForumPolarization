@@ -330,6 +330,7 @@ class GraphManager:
             second_line = f.readline()
             s2 = second_line.split(",")
             s2.pop()
+
         nodes = [node for node in graph.nodes]
         s1_users = []
         s2_users = []
@@ -343,6 +344,28 @@ class GraphManager:
             f.write("\n")
             f.write((",".join(s2_users)))
 
+    def count_positive_edges(self, sub1, sub2, sub):
+        graph1 = self.import_graph(sub1)
+        group1 = set(graph1.nodes)
+
+        graph2 = self.import_graph(sub2)
+        group2 = set(graph2.nodes)
+
+
+        graph = self.import_graph(sub)
+        graph = self.aggregate_graph(graph)
+
+        count_pedges = 0
+        print("ok")
+        for u,v in graph.edges():
+            if (u in group1 and v in group2) or (u in group2 and v in group1):
+                
+                if graph[u][v]['weight'] == 1:
+                    count_pedges += 1
+       
+        print(count_pedges)
+
+
         
     
 
@@ -351,7 +374,6 @@ class GraphManager:
 if __name__ == "__main__":
    
     manager = GraphManager()
-    sub = "conspiracy0_space"
     modify = False
     # filename = "conspiracy_both.json"
     
@@ -377,13 +399,11 @@ if __name__ == "__main__":
     # for sub in commons.all_subreddits:
     #     manager.test2_save_probability_graphs(sub)
     # for sub in commons.all_subreddits:
-    manager.action1_convert_extracted_signed_groups(sub)
+    
+    # manager.action1_convert_extracted_signed_groups(sub)
     
 
-
-
-
-
-    
+    manager.count_positive_edges("conspiracy0_both.txt", "space_both.txt", "conspiracy0_both_space_both.txt")
+       
 
     
