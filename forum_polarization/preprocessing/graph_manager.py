@@ -126,18 +126,19 @@ class GraphManager:
         return self.merge_graphs(ucgs)
 
 
-    def export_graph(self, graph, filename, specific_path=""):
-        if specific_path != "":
-            filepath = specific_path
-        filepath = "forum_polarization/preprocessing/graph_data/{}".format(filename)
-        nx.write_weighted_edgelist(graph, filepath)
-
-    def import_graph(self, filename, specific_path="", weighted=False):
-        
+    def export_graph(self, graph, filename="", specific_path=""):
         if specific_path != "":
             filepath = specific_path
         else:
             filepath = "forum_polarization/preprocessing/graph_data/{}".format(filename)
+        nx.write_weighted_edgelist(graph, filepath)
+
+    def import_graph(self, filename="", specific_path="", weighted=False):
+        
+        if specific_path != "":
+            filepath = specific_path
+        else:
+            filepath = "graph_data/{}".format(filename)
         if weighted:
             return nx.read_weighted_edgelist(filepath, create_using=nx.DiGraph)
         return nx.read_weighted_edgelist(filepath, create_using=nx.MultiDiGraph)
@@ -213,6 +214,15 @@ class GraphManager:
     def calculate_clustering_coefficient(self, G):
         coeffs = nx.clustering(G)
         return sum(coeffs.values())/len(coeffs)
+    
+    def count_edges_across(self, g1_nodes, g2_nodes, merged_graph):
+        count_edges = 0
+        for u,v in merged_graph.edges():
+            if (u in g1_nodes and v in g2_nodes) or (v in g1_nodes and u in g2_nodes):
+                count_edges += 1
+
+        return count_edges
+
 
     def modify_signed_format(self, sub):
         filename = f"graph_data/{sub}_both.txt"
@@ -230,9 +240,9 @@ class GraphManager:
                 edges = line.split()
                 edges[2] = str(int(float(edges[2])))
                 f1.write("{}\t{}\t{}\n".format(node_map[edges[0]], node_map[edges[1]], edges[2]))
-
-
-
+    
+    def find_signed_groups_from_file(graph, filename):
+        pass
 
     def test1_save_graphs(self, sub_name, modify):
         filenames = commons.get_filenames_by_subreddit(sub_name, "")
@@ -255,15 +265,15 @@ class GraphManager:
     def test3_save_signed_graphs(self, sub_name):
         
         filenames = commons.get_filenames_by_subreddit(sub_name, "txt")
-        filenames = ["space_both.txt"]
         for file in filenames:
-            graph = self.import_graph(file)
+            print(file)
+            graph = self.import_graph(specific_path="graph_data/"+file)
             new_graph = self.aggregate_signed_graph(graph)
-            self.export_graph(new_graph, f"signed_graphs/{file}")
+            self.export_graph(new_graph, specific_path="graph_data/"+f"signed_graphs/{file}")
 
     def test4_combine_graphs(self, filename1, filename2):
-        graph1 = self.import_graph(filename1)
-        graph2 = self.import_graph(filename2)
+        graph1 = self.import_graph(specific_path=filename1)
+        graph2 = self.import_graph(specific_path=filename2)
 
         merged = self.combine_graphs(graph1, graph2)
         filename1 = filename1.split(".")[0]
@@ -290,45 +300,84 @@ class GraphManager:
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         graph_name =  "{}_{}.txt".format(filename1, filename2)
-        g = self.import_graph(graph_name)
+        g = self.import_graph(specific_path="graph_data/"+graph_name)
         print(g)
         new_graph = self.aggregate_signed_graph(g)
         self.export_graph(new_graph, f"signed_graphs/{graph_name}")
 
+    def test7_count_edges_across(self, filename1, filename2, p_type):
+        g1 = self.import_graph(filename1)
+        g2 = self.import_graph(filename2)
+        g1_nodes = set(g1.nodes)
+        g2_nodes = set(g2.nodes)
+        filename1 = filename1.split(".")[0]
+        filename2 = filename2.split(".")[0]
+        merged_graph_name = f"{filename1}_{filename2}.txt"
+        merged_graph = nx.Graph(self.import_graph("", specific_path="graph_data/"+merged_graph_name))
+        # merged_graph = self.aggregate_signed_graph(merged_graph)
+        print(self.count_edges_across(g1_nodes, g2_nodes, merged_graph))
+
+    def action1_convert_extracted_signed_groups(self, sub):
+        parts = sub.split("_")
+        filename = parts[0]+"_both"+f"_{parts[1]}_both.txt"
+        graph = self.import_graph(specific_path="graph_data/"+filename)
+        s1 = ""
+        s2 = ""
+        with open("graph_data/extracted_signed_groups/"+sub+".txt", "r") as f:
+            first_line = f.readline()
+            s1 = first_line.split(",")
+            s1.pop()
+            second_line = f.readline()
+            s2 = second_line.split(",")
+            s2.pop()
+        nodes = [node for node in graph.nodes]
+        s1_users = []
+        s2_users = []
+        for user in s1:
+            s1_users.append(nodes[int(user)])
+        for user in s2:
+            s2_users.append(nodes[int(user)])
+
+        with open("graph_data/extracted_signed_groups/"+sub+"_names.txt", "w") as f:
+            f.write(",".join(s1_users))
+            f.write("\n")
+            f.write((",".join(s2_users)))
+
+        
+    
 
 
 
 if __name__ == "__main__":
    
     manager = GraphManager()
-    sub = "conspiracy0_both_space"
+    sub = "conspiracy0_space"
     modify = False
     # filename = "conspiracy_both.json"
     
     # manager.test1_save_graphs(sub, modify)
-    # manager.test3_save_signed_graphs("")
-    combs = [["science_top.txt", "conspiracy_top.txt"],["science_controversial.txt", "conspiracy_controversial.txt"],["science_both.txt", "conspiracy_both.txt"],
-            ["Coronavirus_top.txt", "conspiracy_top.txt"],["Coronavirus_controversial.txt", "conspiracy_controversial.txt"],["Coronavirus_both.txt", "conspiracy_both.txt"],
-            ["WitchesVsPatriarchy_top.txt", "Mensrights_top.txt"],["WitchesVsPatriarchy_controversial.txt", "Mensrights_controversial.txt"],["WitchesVsPatriarchy_both.txt", "Mensrights_both.txt"],
-            ["lgbt_top.txt", "Conservative_top.txt"],["lgbt_controversial.txt", "Conservative_controversial.txt"],["lgbt_both.txt", "Conservative_both.txt"],
-            ["conspiracy0_top.txt", "space_top.txt"],["conspiracy0_controversial.txt", "space_controversial.txt"],["conspiracy0_both.txt", "space_both.txt"]]
+    # for sub in commons.all_subreddits:
+    #     manager.test3_save_signed_graphs(sub)
     
     # manager.test4_combine_graphs("Coronavirus_controversial.txt", "science_controversial.txt")
     #f = "Coronavirus_both_science_both.txt"
     #g = manager.import_graph(f)
     #g = manager.aggregate_signed_graph(g)
     #manager.export_graph(g, f"signed_graphs/{f}")
-    f1 = "Coronavirus_both.txt"
-    f2 = "conspiracy_both.txt"
+    f1 = "conspiracy0_top.txt"
+    f2 = "space_top.txt"
     # manager.test4_combine_graphs(f1, f2)
     # manager.test6_combine_signed_graphs(f1, f2)
 
-    manager.modify_signed_format(sub)
+    # manager.modify_signed_format(sub)
+    # manager.test7_count_edges_across(f1,f2, "top")
     
     # for comb in combs:
     #    manager.test5_save_interweighted_graphs(comb[0], comb[1])
     # for sub in commons.all_subreddits:
     #     manager.test2_save_probability_graphs(sub)
+    # for sub in commons.all_subreddits:
+    manager.action1_convert_extracted_signed_groups(sub)
     
 
 
