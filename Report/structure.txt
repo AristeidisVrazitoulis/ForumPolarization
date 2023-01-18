@@ -1,0 +1,26 @@
+Chapter 2 - Problem Definition
+Chapter 3 - Methodology
+	3.1 Choice of subjects - Keywords
+	3.2 Data Collection - Reddit API
+	3.3 Tree Creation
+		3.3.1 Modified Version of creation
+	3.4 Graph Creation
+		3.4.1 MultiGraphs
+		3.4.2 UnsignedGraphs
+			3.4.2.1 SimpleGraphs
+			3.4.2.2 Modified graphs
+			3.4.2.3 Weighted/Probability Graphs
+		3.4.3 Signed Graphs
+			3.4.3.1 ScoreSignedGraphs
+			3.4.3.2 SentimentAnalysisGraphs
+
+Chapter 4 - Unsigned Polarization Results
+	4.1 Variation 1
+	4.2 Variation 2
+	4.3 Variation 3
+	4.4 Comparison
+
+Chapter 5 - Signed Polarization Results
+	5.1 Variation 1
+	5.2 Variation 2
+	5.3 Comparison

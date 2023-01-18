@@ -1,9 +1,9 @@
 
 
 all_subreddits = ["Coronavirus","conspiracy","science", "WitchesVsPatriarchy", "MensRights", "lgbt", "Conservative", "conspiracy0", "space"]
-
+inter_communities = [["Coronavirus","conspiracy"], ["science","conspiracy"], ["WitchesVsPatriarchy", "MensRights"], ["lgbt", "Conservative"], ["conspiracy0", "space"]]
 topics = {
-    "covid": ["Coronavirus","conspiracy","science","worldnews"],
+    "covid": ["Coronavirus","conspiracy","science"],
     "patriarchy": ["WitchesVsPatriarchy","MensRights"]
 }
 

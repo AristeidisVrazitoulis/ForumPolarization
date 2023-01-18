@@ -8,11 +8,9 @@ For each JSON file we make a graph for each tree and then merge all those graphs
 import networkx as nx
 import time
 
-from httplib2 import ServerNotFoundError
-
-
 from utils import commons
-from preprocessing.perspective_api import perspective
+# from preprocessing.apis import perspective
+from preprocessing.apis import sentiment_classifier
 
 from preprocessing.tree_loader import TreeLoader
 from networkx.algorithms import community
@@ -39,15 +37,16 @@ class GraphManager:
         return edge_sign
 
     def get_perspective_api(self):
-        try:
-            return perspective.PerspectiveAPI()
-        except ServerNotFoundError:
-            print("No wifi")
-            return None
+        pass
+        # return perspective.PerspectiveAPI()
+        
+    
+    def get_monkeylearn_api(self):
+        pass
         
 
     # converts multidigraph to graph just by adding edges
-    def aggregate_graph(self, multi_graph):
+    def aggregate_to_weighted_graph(self, multi_graph):
         # create weighted graph from M
         G = nx.Graph()
         for u,v in multi_graph.edges():
@@ -77,8 +76,9 @@ class GraphManager:
             if G.has_edge(u,v):
                 if G[u][v]['weight'] == -1: continue
 
-                G[u][v]['weight'] = w
+                G[u][v]['weight'] = 1
             else:
+                if w == 0: w = 1
                 G.add_edge(u, v, weight=w)
 
         return G
@@ -108,6 +108,41 @@ class GraphManager:
             ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
         return ucg
 
+    def create_sentiment_multigraph(self, reply_tree):
+        ucg = nx.MultiDiGraph()
+        ml = sentiment_classifier.SentimentClassifier()
+        for comment_node in reply_tree.all_nodes_itr():
+            nid = comment_node.identifier
+            child = reply_tree.get_node(nid)
+            if child.tag == "AutoModerator":continue
+            # assign score through sentiment analysis
+            if child.data['body']:
+                child_sign = ml.vader_classify(child.data['body'])
+            else:
+                child_sign = 1 if child.data['score'] > 0 else -1
+
+            child.data["score"] = -1 if child.data["score"] < 0 else 1
+            if child_sign == child.data['score']:
+                self.count_same_signs += 1
+
+            ucg.add_node(child.tag)
+
+            parent = reply_tree.parent(nid)
+            if parent is None or parent.tag == "AutoModerator": continue
+            
+            sign = child_sign*parent.data["score"]
+            if  sign != 0:
+                edge_sign = sign
+            else: 
+                edge_sign = child_sign+parent.data["score"]
+            
+            # edge_sign = 1
+
+            # make a directed edge child -> parent
+            ucg.add_edge(child.tag, parent.tag, weight=edge_sign)
+
+        return ucg
+
     def merge_graphs(self, graphs):
         g = graphs[0]
         for i in range(1,len(graphs)):
@@ -116,11 +151,15 @@ class GraphManager:
 
     # merges all trees given from a file
     # returns an nx graph
-    def create_graph_from_trees(self, trees):
+    def create_graph_from_trees(self, trees, sentiment=False):
         
         ucgs = []
         for tree in trees:
-            ucg = self.create_multigraph(tree)
+            if sentiment:
+                ucg = self.create_sentiment_multigraph(tree)
+            else:
+                ucg = self.create_multigraph(tree)
+
             ucgs.append(ucg)
 
         return self.merge_graphs(ucgs)
@@ -153,7 +192,6 @@ class GraphManager:
         merged = self.merge_graphs([graph1, graph2])
         
         merged = self.get_connected_graph(merged)
-
         return merged
 
     def print_single_graph(self, graph):
@@ -180,7 +218,7 @@ class GraphManager:
 
 
     # loads trees from disk and makes a graph
-    def get_graph_from_file(self, filename, modified=False):
+    def get_graph_from_file(self, filename, modified=False, sentiment=False):
         
         tree_loader = TreeLoader()
         print(filename)
@@ -190,8 +228,10 @@ class GraphManager:
             trees = tree_loader.get_trees_from_json(filename)
 
         self.count_hate_comments = 0
-        g = self.create_graph_from_trees(trees)
-        print("# hate comments", self.count_hate_comments)
+        self.count_same_signs = 0
+        g = self.create_graph_from_trees(trees, sentiment)
+        print(self.count_same_signs)
+
 
         self.print_single_graph(g)
         # The graph might not be connected so we take the largest component of the graph
@@ -223,9 +263,9 @@ class GraphManager:
 
         return count_edges
 
-
+    # converts names of to numbers 
     def modify_signed_format(self, sub):
-        filename = f"graph_data/{sub}_both.txt"
+        filename = f"graph_data/sentiment_graphs/{sub}_both.txt"
 
         name_graph = nx.read_weighted_edgelist(filename)
 
@@ -234,15 +274,41 @@ class GraphManager:
 
         node_map = {nodes[i]:i for i in range(len(nodes))}
         
-        with open(f"graph_data/signed_graphs/{sub}.txt", 'w') as f1, open(filename, 'r') as f2:
+        with open(f"graph_data/sentiment_graphs/converted_graphs/{sub}.txt", 'w') as f1, open(filename, 'r') as f2:
             f1.write("#\t{}\n".format(n_nodes))
             for line in f2.readlines():
                 edges = line.split()
                 edges[2] = str(int(float(edges[2])))
                 f1.write("{}\t{}\t{}\n".format(node_map[edges[0]], node_map[edges[1]], edges[2]))
-    
-    def find_signed_groups_from_file(graph, filename):
-        pass
+
+    def action1_convert_extracted_signed_groups(self, sub):
+        # converts numbers to users
+        subs = sub.split("_")
+
+        graph = self.import_graph(specific_path=f"graph_data/sentiment_graphs/{subs[0]}_both_{subs[1]}_both.txt")
+        s1 = ""
+        s2 = ""
+        with open("graph_data/sentiment_graphs/extracted_signed_groups/"+sub+".txt", "r") as f:
+            first_line = f.readline()
+            s1 = first_line.split(",")
+            s1.pop()
+            second_line = f.readline()
+            s2 = second_line.split(",")
+            s2.pop()
+
+        nodes = [node for node in graph.nodes]
+        s1_users = []
+        s2_users = []
+        for user in s1:
+            s1_users.append(nodes[int(user)])
+        for user in s2:
+            s2_users.append(nodes[int(user)])
+
+        with open("graph_data/sentiment_graphs/extracted_signed_groups/"+sub+"_names.txt", "w") as f:
+            f.write(",".join(s1_users))
+            f.write("\n")
+            f.write((",".join(s2_users)))
+
 
     def test1_save_graphs(self, sub_name, modify):
         filenames = commons.get_filenames_by_subreddit(sub_name, "")
@@ -252,19 +318,32 @@ class GraphManager:
             if modify:
                 filename=filename+"_modified"
             self.export_graph(connected_graph, filename+".txt")
+
+    def test1_save_sentiment_graphs(self, sub_name):
+        filenames = commons.all_subreddits
+        
+        path = "graph_data/"
+        for filename in filenames:
+            print(filename)
+            filename += "_both"
+            connected_graph = self.get_graph_from_file(filename + ".json", sentiment=True)
+            
+            graph = self.aggregate_signed_graph(connected_graph)
+            self.export_graph(graph, specific_path=path+"sentiment_graphs/"+filename+".txt")
     
     def test2_save_probability_graphs(self, sub_name):
         
         filenames = commons.get_filenames_by_subreddit(sub_name, "txt")
         for file in filenames:
             graph = self.import_graph(file)
-            new_graph = self.aggregate_graph(graph)
+            new_graph = self.aggregate_to_weighted_graph(graph)
             new_graph = self.make_probability_graph(new_graph)
             self.export_graph(new_graph, f"weighted_graphs/{file}")
 
     def test3_save_signed_graphs(self, sub_name):
         
         filenames = commons.get_filenames_by_subreddit(sub_name, "txt")
+        filenames = ["conspiracy0_both_space_both.txt"]
         for file in filenames:
             print(file)
             graph = self.import_graph(specific_path="graph_data/"+file)
@@ -272,14 +351,16 @@ class GraphManager:
             self.export_graph(new_graph, specific_path="graph_data/"+f"signed_graphs/{file}")
 
     def test4_combine_graphs(self, filename1, filename2):
-        graph1 = self.import_graph(specific_path=filename1)
-        graph2 = self.import_graph(specific_path=filename2)
+        path = "graph_data/sentiment_graphs/"
+
+        graph1 = self.import_graph(specific_path=path+filename1)
+        graph2 = self.import_graph(specific_path=path+filename2)
 
         merged = self.combine_graphs(graph1, graph2)
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         graph_name =  "{}_{}.txt".format(filename1, filename2)
-        self.export_graph(merged, graph_name)
+        self.export_graph(merged, specific_path=path+graph_name)
 
 
     def test5_save_interweighted_graphs(self, filename1, filename2):
@@ -287,7 +368,7 @@ class GraphManager:
         graph2 = self.import_graph(filename2)
         merged = self.combine_graphs(graph1, graph2)
         print(merged)
-        aggregated_graph = self.aggregate_graph(merged)
+        aggregated_graph = self.aggregate_to_weighted_graph(merged)
         probability_graph = self.make_probability_graph(aggregated_graph)
 
         filename1 = filename1.split(".")[0]
@@ -305,55 +386,32 @@ class GraphManager:
         new_graph = self.aggregate_signed_graph(g)
         self.export_graph(new_graph, f"signed_graphs/{graph_name}")
 
-    def test7_count_edges_across(self, filename1, filename2, p_type):
-        g1 = self.import_graph(filename1)
-        g2 = self.import_graph(filename2)
+    def test7_count_edges_across(self, filename1, filename2):
+        path = "graph_data/signed_graphs/"
+        g1 = nx.read_weighted_edgelist(path+filename1)
+        g2 = nx.read_weighted_edgelist(path+filename2)
         g1_nodes = set(g1.nodes)
         g2_nodes = set(g2.nodes)
         filename1 = filename1.split(".")[0]
         filename2 = filename2.split(".")[0]
         merged_graph_name = f"{filename1}_{filename2}.txt"
-        merged_graph = nx.Graph(self.import_graph("", specific_path="graph_data/"+merged_graph_name))
+        g = nx.read_weighted_edgelist(path+merged_graph_name)
         # merged_graph = self.aggregate_signed_graph(merged_graph)
-        print(self.count_edges_across(g1_nodes, g2_nodes, merged_graph))
+        print(self.count_edges_across(g1_nodes, g2_nodes, g))
 
-    def action1_convert_extracted_signed_groups(self, sub):
-        parts = sub.split("_")
-        filename = parts[0]+"_both"+f"_{parts[1]}_both.txt"
-        graph = self.import_graph(specific_path="graph_data/"+filename)
-        s1 = ""
-        s2 = ""
-        with open("graph_data/extracted_signed_groups/"+sub+".txt", "r") as f:
-            first_line = f.readline()
-            s1 = first_line.split(",")
-            s1.pop()
-            second_line = f.readline()
-            s2 = second_line.split(",")
-            s2.pop()
-
-        nodes = [node for node in graph.nodes]
-        s1_users = []
-        s2_users = []
-        for user in s1:
-            s1_users.append(nodes[int(user)])
-        for user in s2:
-            s2_users.append(nodes[int(user)])
-
-        with open("graph_data/extracted_signed_groups/"+sub+"_names.txt", "w") as f:
-            f.write(",".join(s1_users))
-            f.write("\n")
-            f.write((",".join(s2_users)))
+    
 
     def count_positive_edges(self, sub1, sub2, sub):
-        graph1 = self.import_graph(sub1)
+        path = "graph_data/signed_graphs/"
+
+        graph1 = nx.read_weighted_edgelist(path+sub1)
         group1 = set(graph1.nodes)
 
-        graph2 = self.import_graph(sub2)
+        graph2 = nx.read_weighted_edgelist(path+sub2)
         group2 = set(graph2.nodes)
 
 
-        graph = self.import_graph(sub)
-        graph = self.aggregate_graph(graph)
+        graph = nx.read_weighted_edgelist(path+sub)
 
         count_pedges = 0
         print("ok")
@@ -365,9 +423,18 @@ class GraphManager:
        
         print(count_pedges)
 
+    def count_different_signs(self, filename):
+        graph_signed = nx.read_weighted_edgelist(f"graph_data/signed_graphs/{filename}_both.txt")
+        graph_sentiment = nx.read_weighted_edgelist(f"graph_data/sentiment_graphs/{filename}_both.txt")
+        count = 0
 
-        
-    
+        for u,v in graph_signed.edges():
+            if graph_signed[u][v]['weight'] != graph_sentiment[u][v]['weight']:
+                count += 1
+
+        print(100*count/len(graph_sentiment.edges))
+        return count 
+
 
 
 
@@ -375,23 +442,40 @@ if __name__ == "__main__":
    
     manager = GraphManager()
     modify = False
+    sub = "Coronavirus"
+    #manager.count_positive_edges("conspiracy0_both.txt", "space_both.txt", "conspiracy0_both_space_both.txt")
     # filename = "conspiracy_both.json"
     
-    # manager.test1_save_graphs(sub, modify)
+    # manager.test1_save_sentiment_graphs(sub)
     # for sub in commons.all_subreddits:
-    #     manager.test3_save_signed_graphs(sub)
-    
-    # manager.test4_combine_graphs("Coronavirus_controversial.txt", "science_controversial.txt")
+    # manager.test3_save_signed_graphs("")
+    f1 = "conspiracy0_both.txt"
+    f2 = "space_both.txt"
+    for subs in commons.inter_communities:
+        filename = subs[0]+"_"+subs[1]
+        print(filename)
+        manager.action1_convert_extracted_signed_groups(filename)
+
+    # manager.modify_signed_format("conspiracy0_both_space")
+    #     manager.modify_signed_format(sub)
     #f = "Coronavirus_both_science_both.txt"
     #g = manager.import_graph(f)
     #g = manager.aggregate_signed_graph(g)
     #manager.export_graph(g, f"signed_graphs/{f}")
-    f1 = "conspiracy0_top.txt"
-    f2 = "space_top.txt"
-    # manager.test4_combine_graphs(f1, f2)
+   
+    
+
+
+    # for filename in commons.all_subreddits:
+    #     print(filename)
+    #     count = manager.count_different_signs(filename)
+    
+    #     print()
+    # manager.test7_count_edges_across(f1, f2)
     # manager.test6_combine_signed_graphs(f1, f2)
 
-    # manager.modify_signed_format(sub)
+    
+    # manager.modify_signed_format("conspiracy0_both_space")
     # manager.test7_count_edges_across(f1,f2, "top")
     
     # for comb in combs:
@@ -400,10 +484,11 @@ if __name__ == "__main__":
     #     manager.test2_save_probability_graphs(sub)
     # for sub in commons.all_subreddits:
     
-    # manager.action1_convert_extracted_signed_groups(sub)
+    # for sub in commons.all_subreddits:
+    #     manager.action1_convert_extracted_signed_groups(sub)
     
 
-    manager.count_positive_edges("conspiracy0_both.txt", "space_both.txt", "conspiracy0_both_space_both.txt")
+    # manager.count_positive_edges("conspiracy0_both.txt", "space_both.txt", "conspiracy0_both_space_both.txt")
        
 
     

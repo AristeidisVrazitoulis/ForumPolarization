@@ -28,7 +28,7 @@ class TreeLoader:
     def load_file(self,filename):
         # loads json file at the directory 'tree_data'
         
-        with open("forum_polarization/preprocessing/tree_data/{}".format(filename)) as f:
+        with open("tree_data/{}".format(filename)) as f:
             tree_data = json.load(f)
         return tree_data
 

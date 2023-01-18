@@ -2,14 +2,13 @@
 Converts edge list to csv file for the gephi software
 '''
 
-theme = "lgbt_top_Conservative_top"
+theme = "conspiracy0_top_modified_space_top_modified"
 
 
 
 filename = f"{theme}.txt"
-path = "../preprocessing/graph_data/"
-source_path = path+f"{filename}"
-target_path = path+f"gephi_format/{theme}_gephi.csv"
+source_path = f"../preprocessing/graph_data/modified_graphs/{filename}"
+target_path = f"../preprocessing/graph_data/gephi_format/{theme}_gephi.csv"
 
 
 first_line = "Source Target Weight\n"
