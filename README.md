@@ -12,13 +12,13 @@ We study various forms of polarization on reddit.
 **Inter-polarization**: examines the formation of polarized groups discussing a specific topic across two communities (subreddits)
 
 
--We collect data using the python module PRAW
+- We collect data using the python module PRAW
 
--We make a comnment tree for each post we collected
+- We make a comnment tree for each post we collected
 
--Out of the trees we make the user conversation graphs
+- Out of the trees we make the user conversation graphs
 
--On the graphs we perform algorithms to measure polarity statistically
+- On the graphs we perform algorithms to measure polarity statistically
 
 
 For unsigned polarity we use the Random-Walk Algorithm
