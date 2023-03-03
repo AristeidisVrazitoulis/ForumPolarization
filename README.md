@@ -23,3 +23,10 @@ We study various forms of polarization on reddit.
 
 For unsigned polarity we use the Random-Walk Algorithm
 For signed polarity we use the Random-Eigensign Algorithm
+
+
+Polarization between lgbt and Conservative communities
+
+![lgbt_conservative](https://user-images.githubusercontent.com/45623442/222721176-98de514e-579a-4343-aa13-2901fc311c4f.png)
+
+We distinguish that there is very low interaction between the communities indicating the lower levels of polarity
